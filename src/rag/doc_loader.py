@@ -6,14 +6,13 @@ def normalize_text(text):
     if not text:
         return ""
 
-    # Fix common PDF line-break artifacts.
-    text = re.sub(r"-\s*\n\s*", "", text)  # de-hyphenate wrapped words
-    text = re.sub(r"\r\n?", "\n", text)  # normalize newlines
+    text = re.sub(r"-\s*\n\s*", "", text)
+    text = re.sub(r"\r\n?", "\n", text)
 
     lines = [line.strip() for line in text.split("\n")]
     lines = [line for line in lines if line]
 
-    def is_header_footer(line):
+    def is_header_or_footer(line):
         if not line:
             return True
         if re.fullmatch(r"\d{1,4}", line):
@@ -24,10 +23,9 @@ def normalize_text(text):
             return True
         return False
 
-    # Drop obvious header/footer lines at the top/bottom of a page.
-    if lines and is_header_footer(lines[0]):
+    if lines and is_header_or_footer(lines[0]):
         lines = lines[1:]
-    if lines and is_header_footer(lines[-1]):
+    if lines and is_header_or_footer(lines[-1]):
         lines = lines[:-1]
 
     text = " ".join(lines)
@@ -51,6 +49,7 @@ def load_docs():
 
     if os.path.exists(pdf_directory):
         pdf_docs = pdf_loader.load()
+        #print("Total length of first document content: ", len(pdf_docs[1].page_content) if pdf_docs else "No PDF documents loaded.")
         for doc in pdf_docs:
             doc.page_content = normalize_text(doc.page_content)
         documents.extend(pdf_docs)
@@ -64,8 +63,9 @@ def load_docs():
         print(f"Text directory '{text_directory}' does not exist.")
     
     print(f"Loaded {len(documents)} documents.")
-    print(f"Sample document metadata: {documents[0].metadata if documents else 'No documents loaded.'}")
-    print(f"Sample document content: {documents[0].page_content[:2000]}...") if documents else print("No documents loaded.")
+    #print(f"First document length after normalization: {len(documents[1].page_content) if documents else 'No documents loaded.'}")
+    #print(f"Sample document metadata: {documents[1].metadata if documents else 'No documents loaded.'}")
+    #print(f"Sample document content: {documents[1].page_content[:2000]}...") if documents else print("No documents loaded.")
     return documents
 
 if __name__ == "__main__":
