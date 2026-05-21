@@ -9,7 +9,7 @@ from langchain_ollama import ChatOllama, OllamaEmbeddings
 def run_evaluation():
     print("1 - Inicialzando modelo juíz local.")
     
-    local_llm = ChatOllama(model="gemma3:4b", temperature=0)
+    local_llm = ChatOllama(model="llama3.1:8b", temperature=0)
     local_embeddings = OllamaEmbeddings(model="nomic-embed-text")
 
     ragas_llm = LangchainLLMWrapper(local_llm)

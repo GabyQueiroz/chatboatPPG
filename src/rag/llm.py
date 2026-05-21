@@ -1,6 +1,6 @@
 import ollama
 
-LLM_MODEL = "gemma3:4b"
+LLM_MODEL = "phi4-mini"
 
 SYSTEM_PROMPT = """
 você é um assistente de perguntas e respostas. Responda às perguntas com base no contexto fornecido. Se o contexto não for suficiente para responder à pergunta, responda com "Desculpe, não tenho informações suficientes para responder a essa pergunta.""
