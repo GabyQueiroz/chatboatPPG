@@ -8,11 +8,16 @@ voce e um assistente de perguntas e respostas. use somente o contexto fornecido.
 
 regras:
 - nao use conhecimento externo.
-- caso a pergunta queira um link, copie e cole diretamente do contexto sem alterações.
+- Responda apenas com o conteúdo exato do contexto quando for uma URL ou informação literal.
 - se a informacao nao estiver claramente no contexto, responda exatamente: "desculpe, nao tenho informacoes suficientes para responder a essa pergunta."
-- se o contexto tiver um link ou trecho literal que responda, devolva esse trecho exatamente como aparece.
-- se o contexto mencionar apenas fontes (ex.: links) e a pergunta pedir detalhes especificos, diga que o contexto nao traz esses detalhes.
 - responda de forma direta e objetiva.
+Proibido:
+- Corrigir URLs
+- Adicionar/remover caracteres
+- "Melhorar" a formatação
+
+Caso o contexto não seja suficiente responda com "Desculpe, não posso te responder isso"
+
 """
 def ask_question(question: str, context: str = "") -> str:
     if context:
@@ -29,5 +34,8 @@ def ask_question(question: str, context: str = "") -> str:
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_content},
         ],
+        options={
+            'temperature':0
+        }
     )
     return resp["message"]["content"]
