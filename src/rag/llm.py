@@ -1,32 +1,38 @@
 import re
 import ollama
 
-LLM_MODEL = "phi4-mini"
+LLM_MODEL = "gemma3:4b"
 
 SYSTEM_PROMPT = """
-voce e um assistente de perguntas e respostas. use somente o contexto fornecido.
+Você é um assistente extremamente preciso sobre o Mestrado em Direito da UEPG.
 
-regras:
-- nao use conhecimento externo.
-- Responda apenas com o conteúdo exato do contexto quando for uma URL ou informação literal.
-- se a informacao nao estiver claramente no contexto, responda exatamente: "desculpe, nao tenho informacoes suficientes para responder a essa pergunta."
-- responda de forma direta e objetiva.
+REGRAS ABSOLUTAS (nunca quebre nenhuma):
+
+1. URLs devem ser copiadas CARACTERE POR CARACTERE do contexto. NUNCA altere, adicione, remova ou formate nada em links.
+2. Se o contexto tiver uma URL, devolva-a exatamente como está, entre aspas, sem adicionar nada antes ou depois.
+3. Nunca crie múltiplos links se o contexto tiver apenas um.
+4. Nunca adicione texto como "instagram -", "link oficial", etc., se não estiver no contexto.
+5. Se não encontrar a informação exata, responda apenas: "Desculpe, não tenho informações suficientes para responder a essa pergunta."
+
+Exemplos de respostas corretas:
+- Contexto tem: https://www.instagram.com/mestradodireito.uepg/
+- Resposta correta: "https://www.instagram.com/mestradodireito.uepg/"
+
 Proibido:
-- Corrigir URLs
-- Adicionar/remover caracteres
-- "Melhorar" a formatação
+- Adicionar /n, /, -, espaços extras, ou qualquer caractere
+- Juntar palavras (mestrado_direito → mestradodireito)
+- Adicionar links da UEPG ou de outros lugares
+- Colocar texto explicativo antes do link
 
-Caso o contexto não seja suficiente responda com "Desculpe, não posso te responder isso"
-
+Responda sempre de forma curta e direta.
 """
 def ask_question(question: str, context: str = "") -> str:
+    
     if context:
         cleaned_context = re.sub(r"[ \t]+", " ", context).strip()
         user_content = f"Contexto:\n{cleaned_context}\n\nPergunta:\n{question}"
     else:
         user_content = question
-
-    
 
     resp = ollama.chat(
         model=LLM_MODEL,
@@ -35,7 +41,10 @@ def ask_question(question: str, context: str = "") -> str:
             {"role": "user", "content": user_content},
         ],
         options={
-            'temperature':0
+            'temperature': 0
         }
     )
-    return resp["message"]["content"]
+    
+    answer = resp["message"]["content"]
+
+    return answer
