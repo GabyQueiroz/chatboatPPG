@@ -11,8 +11,8 @@ def chunk_id(doc):
     return f"{source}|{page}|{start}|{h}"
 
 def chunk_data(documents):
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=900,
-                                                    chunk_overlap=120,
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1400,
+                                                    chunk_overlap=300,
                                                     separators=["\n\n", "\n", ". ", " ", ""], add_start_index=True)
     chunked_data = text_splitter.split_documents(documents)
     for doc in chunked_data:
