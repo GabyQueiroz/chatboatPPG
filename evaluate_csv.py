@@ -1,7 +1,7 @@
 import pandas as pd
 import time
 from datasets import Dataset
-from ragas import evaluate
+from ragas import evaluate, RunConfig
 from ragas.metrics import faithfulness, answer_relevancy, context_precision, context_recall
 from ragas.llms import LangchainLLMWrapper
 from ragas.embeddings import LangchainEmbeddingsWrapper
@@ -63,12 +63,18 @@ def run_batch_evaluation(input_csv_path: str, output_csv_path: str):
     dataset = Dataset.from_dict(data)
     metrics = [faithfulness, answer_relevancy, context_precision, context_recall]
 
+    run_configs = RunConfig(
+        max_workers=3,
+        timeout=300
+    )
+
     print("\n4. Executando avaliação Ragas em lote (isso pode levar vários minutos)...")
     result = evaluate(
         dataset=dataset,
         metrics=metrics,
         llm=ragas_llm,
-        embeddings=ragas_emb
+        embeddings=ragas_emb,
+        run_config=run_configs
     )
 
     print("\n5. Consolidando e exportando resultados...")
