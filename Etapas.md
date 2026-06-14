@@ -21,4 +21,4 @@
 ### Modelos LLM
 
 - Gemma 3
-- phi4-mini
+- Llama 3 (juíz)

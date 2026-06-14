@@ -84,10 +84,9 @@ def run_batch_evaluation(input_csv_path: str, output_csv_path: str):
     
     print(f"\n========================================================")
     print(f"Sucesso! Avaliação concluída.")
-    print(f"Resultados salvos em: {output_csv_path}")
-    print(f"========================================================\n")
+    print(f"Resultados salvos em: {output_csv_path}\n")
 
-    print(result)
+    #print(result)
 
 if __name__ == "__main__":
     INPUT_FILE = "perguntas.csv"
