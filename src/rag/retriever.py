@@ -30,6 +30,8 @@ def _expand_query(text: str) -> str:
         expansions.append("suficiência língua estrangeira inglês espanhol final do 1º semestre")
     if "defesa" in folded and any(term in folded for term in ["versao final", "deposito", "entregar", "prazo"]):
         expansions.append("60 sessenta dias após defesa pública versão final dissertação trabalho final")
+    if "credito" in folded and any(term in folded for term in ["quantos", "total", "tenho", "preciso", "exigidos"]):
+        expansions.append("artigo 34 totalizam-se 33 trinta e três créditos composição curricular grade curricular")
     if not expansions:
         return text
     return f"{text} {' '.join(expansions)}"

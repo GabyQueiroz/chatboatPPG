@@ -3,6 +3,22 @@ const input = document.querySelector("#query");
 const messages = document.querySelector("#messages");
 const send = document.querySelector("#send");
 
+function renderSources(article, sources = []) {
+  if (!sources.length) return;
+
+  const sourceBox = document.createElement("div");
+  sourceBox.className = "sources";
+  sourceBox.innerHTML = "<strong>Fontes consultadas</strong>";
+  const list = document.createElement("ul");
+  sources.slice(0, 4).forEach((item) => {
+    const li = document.createElement("li");
+    li.textContent = item.source;
+    list.appendChild(li);
+  });
+  sourceBox.appendChild(list);
+  article.appendChild(sourceBox);
+}
+
 function addMessage(role, text, sources = []) {
   const article = document.createElement("article");
   article.className = `message ${role}`;
@@ -10,22 +26,19 @@ function addMessage(role, text, sources = []) {
   const body = document.createElement("p");
   body.textContent = text;
   article.appendChild(body);
-
-  if (sources.length) {
-    const sourceBox = document.createElement("div");
-    sourceBox.className = "sources";
-    sourceBox.innerHTML = "<strong>Fontes consultadas</strong>";
-    const list = document.createElement("ul");
-    sources.slice(0, 4).forEach((item) => {
-      const li = document.createElement("li");
-      li.textContent = item.source;
-      list.appendChild(li);
-    });
-    sourceBox.appendChild(list);
-    article.appendChild(sourceBox);
-  }
+  renderSources(article, sources);
 
   messages.appendChild(article);
+  messages.scrollTop = messages.scrollHeight;
+  return article;
+}
+
+function updateMessage(article, text, sources = []) {
+  article.innerHTML = "";
+  const body = document.createElement("p");
+  body.textContent = text;
+  article.appendChild(body);
+  renderSources(article, sources);
   messages.scrollTop = messages.scrollHeight;
 }
 
@@ -52,12 +65,13 @@ form.addEventListener("submit", async (event) => {
   input.value = "";
   send.disabled = true;
   send.textContent = "Consultando";
+  const pending = addMessage("assistant", "Consultando os documentos...");
 
   try {
     const data = await ask(query);
-    addMessage("assistant", data.results, data.sources || []);
+    updateMessage(pending, data.results, data.sources || []);
   } catch (error) {
-    addMessage("assistant", "Não consegui consultar o chatbot agora. Verifique se o servidor e o Ollama estão ativos.");
+    updateMessage(pending, "Não consegui consultar o chatbot agora. Verifique se o servidor e o Ollama estão ativos.");
   } finally {
     send.disabled = false;
     send.textContent = "Enviar";
