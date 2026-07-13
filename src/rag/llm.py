@@ -1,39 +1,73 @@
 import re
+
 import ollama
 
 LLM_MODEL = "gemma3:4b"
 
 SYSTEM_PROMPT = """
-Você é um assistente extremamente preciso sobre o Mestrado em Direito da UEPG.
+Você é um assistente extremamente preciso sobre o Mestrado Profissional em Direito da UEPG.
 
-PASSO 0 — CLASSIFIQUE A PERGUNTA ANTES DE RESPONDER:
-- Se a pergunta pedir um LINK, SITE, PÁGINA, INSTAGRAM, REDES SOCIAIS, ou "onde encontro/acesso" → siga as REGRAS DE URL.
-- Para QUALQUER outra pergunta (nomes, datas, números, prazos, definições, sim/não, "quem é", "qual é", etc.) → responda em TEXTO NORMAL com base no contexto. NÃO inclua URLs na resposta, mesmo que existam no contexto, a menos que a pergunta peça explicitamente um link.
+Responda somente com base no CONTEXTO fornecido. Se o contexto não trouxer a informação exata, responda apenas:
+"Desculpe, não tenho informações suficientes para responder a essa pergunta."
 
-REGRAS DE URL (aplicam-se SOMENTE quando o PASSO 0 indicar pergunta sobre link/site):
-1. URLs devem ser copiadas CARACTERE POR CARACTERE do contexto. NUNCA altere, adicione, remova ou formate nada em links.
-2. Devolva a URL exatamente como está, entre aspas, sem adicionar nada antes ou depois.
-3. Nunca crie múltiplos links se o contexto tiver apenas um.
-4. Nunca adicione texto como "instagram -", "link oficial", etc., se não estiver no contexto.
-5. Proibido: adicionar \\n, /, -, espaços extras, ou qualquer caractere; juntar palavras (mestrado_direito → mestradodireito); adicionar links da UEPG ou de outros lugares.
+Regras:
+- Responda em português do Brasil, de forma curta e direta.
+- Preserve nomes próprios, números, prazos, datas, artigos e URLs exatamente como aparecem no contexto.
+- Se a pergunta pedir link, site, página, Instagram, redes sociais ou "onde encontro/acesso", retorne apenas a URL exata quando houver uma URL clara no contexto.
+- Para perguntas que não pedem link, não inclua URLs, salvo se elas forem parte indispensável da resposta.
+- Quando houver regra geral e exceção por turma/ano, explique a regra e a exceção aplicável.
+- Não invente nomes, datas, prazos, documentos, artigos ou procedimentos.
 
-REGRA GERAL (vale para todos os casos):
-- Se não encontrar a informação exata para o que foi perguntado, responda apenas: "Desculpe, não tenho informações suficientes para responder a essa pergunta."
-
-Exemplos:
-- Pergunta: "qual o link do instagram?" / Contexto tem: https://www.instagram.com/mestradodireito.uepg/
-  Resposta correta: "https://www.instagram.com/mestradodireito.uepg/"
-
-- Pergunta: "qual o nome do coordenador de mestrado?" / Contexto tem: "...Coordenador: João Irineu de Resende Miranda..."
-  Resposta correta: João Irineu de Resende Miranda
-
-- Pergunta: "o coordenador é o professor irineu?" / Contexto confirma o nome
-  Resposta correta: Sim, o coordenador é o professor João Irineu de Resende Miranda.
-
-Responda sempre de forma curta e direta.
+Exemplo de recusa:
+Desculpe, não tenho informações suficientes para responder a essa pergunta.
 """
+
+URL_QUERY_RE = re.compile(r"\b(link|site|página|pagina|instagram|rede social|redes sociais|acesso|acessar|url)\b", re.I)
+URL_RE = re.compile(r"https?://[^\s)>\"]+")
+EMAIL_QUERY_RE = re.compile(r"\b(e-?mail|email|correio eletrônico)\b", re.I)
+EMAIL_RE = re.compile(r"[\w.+-]+@[\w.-]+\.\w+")
+PHONE_QUERY_RE = re.compile(r"\b(telefone|ramal|ligar|contato)\b", re.I)
+PHONE_RE = re.compile(r"(?:\(?\d{2}\)?\s*)?\d{4,5}[- ]?\d{4}(?:\s*/\s*\d{4})?")
+
+
+def _direct_url_answer(question: str, context: str) -> str | None:
+    if not URL_QUERY_RE.search(question):
+        return None
+    urls = URL_RE.findall(context or "")
+    if not urls:
+        return None
+
+    lowered_question = question.lower()
+    for url in urls:
+        if "instagram" in lowered_question and "instagram" not in url.lower():
+            continue
+        return url.rstrip(".,;")
+    return urls[0].rstrip(".,;")
+
+
+def _direct_contact_answer(question: str, context: str) -> str | None:
+    if EMAIL_QUERY_RE.search(question):
+        emails = EMAIL_RE.findall(context or "")
+        if emails:
+            return emails[0].rstrip(".,;")
+
+    if PHONE_QUERY_RE.search(question):
+        phones = PHONE_RE.findall(context or "")
+        if phones:
+            return phones[0].strip().rstrip(".,;")
+
+    return None
+
+
 def ask_question(question: str, context: str = "") -> str:
-    
+    direct_contact = _direct_contact_answer(question, context)
+    if direct_contact:
+        return direct_contact
+
+    direct_url = _direct_url_answer(question, context)
+    if direct_url:
+        return direct_url
+
     if context:
         cleaned_context = re.sub(r"[ \t]+", " ", context).strip()
         user_content = f"Contexto:\n{cleaned_context}\n\nPergunta:\n{question}"
@@ -47,10 +81,8 @@ def ask_question(question: str, context: str = "") -> str:
             {"role": "user", "content": user_content},
         ],
         options={
-            'temperature': 0
-        }
+            "temperature": 0,
+        },
     )
-    
-    answer = resp["message"]["content"]
 
-    return answer
+    return resp["message"]["content"]

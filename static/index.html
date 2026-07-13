@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Chatbot Acadêmico PPGD/UEPG</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="chat-panel" aria-label="Chatbot Acadêmico">
+        <header class="app-header">
+          <div>
+            <p class="eyebrow">Mestrado Profissional em Direito</p>
+            <h1>Chatbot Acadêmico PPGD/UEPG</h1>
+          </div>
+          <a class="faq-link" href="/static/faq.html">FAQ</a>
+        </header>
+
+        <div id="messages" class="messages" aria-live="polite">
+          <article class="message assistant">
+            <p>Olá. Faça uma pergunta sobre o programa, disciplinas, prazos, defesa, atividades complementares ou documentos acadêmicos.</p>
+          </article>
+        </div>
+
+        <form id="chat-form" class="composer">
+          <label class="sr-only" for="query">Pergunta</label>
+          <textarea id="query" name="query" rows="2" placeholder="Ex.: Qual o prazo para entregar a versão final após a defesa?"></textarea>
+          <button id="send" type="submit">Enviar</button>
+        </form>
+      </section>
+    </main>
+    <script src="/static/app.js"></script>
+  </body>
+</html>

@@ -1,8 +1,10 @@
 import os
 import re
-from langchain_community.document_loaders import PyPDFLoader, TextLoader, DirectoryLoader
 
-def normalize_text(text, lowercase=False):
+from langchain_community.document_loaders import DirectoryLoader, PyPDFLoader, TextLoader
+
+
+def normalize_text(text):
     if not text:
         return ""
 
@@ -31,10 +33,8 @@ def normalize_text(text, lowercase=False):
     text = " ".join(lines)
     text = re.sub(r"[\t\f\v]+", " ", text)
     text = re.sub(r"\s{2,}", " ", text)
-    text = text.strip()
-    if lowercase:
-        text = text.lower()
-    return text
+    return text.strip()
+
 
 def load_docs():
     pdf_directory = "docs/pdfs"
@@ -50,31 +50,25 @@ def load_docs():
     )
     documents = []
 
-
     if os.path.exists(text_directory):
         text_docs = text_loader.load()
         for doc in text_docs:
-            doc.page_content = normalize_text(doc.page_content, lowercase=True)
+            doc.page_content = normalize_text(doc.page_content)
         documents.extend(text_docs)
     else:
         print(f"Text directory '{text_directory}' does not exist.")
-        
+
     if os.path.exists(pdf_directory):
         pdf_docs = pdf_loader.load()
-        #print("Total length of first document content: ", len(pdf_docs[1].page_content) if pdf_docs else "No PDF documents loaded.")
         for doc in pdf_docs:
-            doc.page_content = normalize_text(doc.page_content, lowercase=True)
+            doc.page_content = normalize_text(doc.page_content)
         documents.extend(pdf_docs)
-    else: 
+    else:
         print(f"PDF directory '{pdf_directory}' does not exist.")
-    
-    
-    
+
     print(f"Loaded {len(documents)} documents.")
-    #print(f"First document length after normalization: {len(documents[1].page_content) if documents else 'No documents loaded.'}")
-    #print(f"Sample document metadata: {documents[1].metadata if documents else 'No documents loaded.'}")
-    #print(f"Sample document content: {documents[1].page_content[:2000]}...") if documents else print("No documents loaded.")
     return documents
+
 
 if __name__ == "__main__":
     load_docs()

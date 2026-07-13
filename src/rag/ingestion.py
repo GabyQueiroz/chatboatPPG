@@ -4,6 +4,7 @@ import os
 from ..rag import load_docs, chunk_data, get_vector_store
 
 MANIFEST_PATH = os.path.join("db", "chroma", "manifest.json")
+INGESTION_VERSION = 2
 
 
 def build_manifest():
@@ -35,7 +36,7 @@ def build_manifest():
                 )
 
     entries.sort(key=lambda item: item["path"])
-    return {"version": 1, "entries": entries}
+    return {"version": INGESTION_VERSION, "entries": entries}
 
 
 def load_manifest():
