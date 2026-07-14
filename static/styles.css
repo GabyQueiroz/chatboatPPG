@@ -107,23 +107,33 @@ button {
   background: var(--assistant);
 }
 
-.sources {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid var(--line);
+.suggestions {
+  width: min(780px, 100%);
+  margin: 0 0 18px;
+}
+
+.suggestions p {
+  margin: 0 0 8px;
   color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.suggestions-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.suggestion-chip {
+  min-width: 0;
+  min-height: 36px;
+  padding: 8px 10px;
+  border: 1px solid #b8d7d1;
+  background: #f1faf8;
+  color: var(--brand-strong);
   font-size: 0.9rem;
-}
-
-.sources strong {
-  display: block;
-  margin-bottom: 6px;
-  color: var(--text);
-}
-
-.sources ul {
-  margin: 0;
-  padding-left: 18px;
+  font-weight: 700;
+  text-align: left;
 }
 
 .composer {

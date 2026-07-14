@@ -175,6 +175,33 @@ def load_quick_answers() -> tuple[QuickAnswer, ...]:
 
 def find_quick_match(query: str, threshold: float = SUGGEST_THRESHOLD) -> Optional[QuickMatch]:
     query_tokens = _tokens(query)
+    asks_credit_hours = (
+        bool({"hora", "horas", "horaria", "carga"} & query_tokens)
+        and bool({"credito", "creditos"} & query_tokens)
+    )
+    if asks_credit_hours:
+        for answer in load_quick_answers():
+            folded_answer = _fold(answer.answer)
+            folded_question = _fold(answer.canonical_question)
+            if ("33" in folded_answer and "credito" in folded_answer) or (
+                "creditos compoem a grade curricular" in folded_question
+            ):
+                enriched_answer = QuickAnswer(
+                    question=answer.question,
+                    canonical_question="Quantas horas correspondem ao total de créditos do mestrado?",
+                    answer=(
+                        "Considerando a equivalência apresentada nas disciplinas do Programa, em que 3 créditos "
+                        "correspondem a 45 horas, cada crédito equivale a 15 horas. Assim, os 33 créditos da grade "
+                        "curricular correspondem a 495 horas."
+                    ),
+                    source=answer.source,
+                    category=answer.category,
+                    intent="horas_creditos",
+                    response_type=answer.response_type,
+                    fallback_answer=answer.fallback_answer,
+                )
+                return QuickMatch(answer=enriched_answer, score=1.0, mode="direct")
+
     asks_total_credits = (
         "creditos" in query_tokens or "credito" in query_tokens
     ) and bool({"quantos", "total", "integralizar", "preciso", "ter"} & query_tokens)

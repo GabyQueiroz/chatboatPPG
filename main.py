@@ -1,10 +1,14 @@
+import random
+import re
+import unicodedata
 from pathlib import Path
+from typing import Literal
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from src.rag import (
     ask_question,
@@ -16,6 +20,7 @@ from src.rag import (
     retrieve,
     sources_for_quick_match,
 )
+from src.rag.quick_answers import load_quick_answers
 
 app = FastAPI(title="Chatbot Acadêmico PPGD/UEPG")
 
@@ -33,8 +38,52 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 ingestion.ingest_data()
 
 
+class ChatMessage(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str
+
+
 class QuestionRequest(BaseModel):
     query: str
+    history: list[ChatMessage] = Field(default_factory=list)
+
+
+def _fold(text: str) -> str:
+    normalized = unicodedata.normalize("NFKD", text or "")
+    without_accents = "".join(ch for ch in normalized if not unicodedata.combining(ch))
+    return without_accents.lower()
+
+
+def _tokens(text: str) -> set[str]:
+    folded = _fold(text)
+    return set(re.findall(r"[a-z0-9]+", folded))
+
+
+def _recent_user_context(history: list[ChatMessage], limit: int = 4) -> str:
+    user_messages = [item.content for item in history if item.role == "user" and item.content.strip()]
+    return " ".join(user_messages[-limit:])
+
+
+def _resolve_follow_up(query: str, history: list[ChatMessage]) -> tuple[str, str | None]:
+    query_tokens = _tokens(query)
+    recent_context = _recent_user_context(history)
+    context_tokens = _tokens(recent_context)
+
+    if not recent_context:
+        return query, None
+
+    is_short_follow_up = len(query_tokens) <= 5
+    asks_hours = bool({"hora", "horas", "carga", "horaria"} & query_tokens)
+    previous_credit_topic = bool({"credito", "creditos"} & context_tokens)
+
+    if is_short_follow_up and asks_hours and previous_credit_topic:
+        resolved = "Quantas horas correspondem ao total de créditos do mestrado?"
+        return resolved, query
+
+    if is_short_follow_up and query_tokens:
+        return f"{query}. Contexto da conversa anterior: {recent_context}", query
+
+    return query, None
 
 
 def _source_label(metadata: dict) -> str:
@@ -45,8 +94,11 @@ def _source_label(metadata: dict) -> str:
     return f"{source}, página {int(page) + 1}"
 
 
-def _build_response(query: str):
-    quick_match = find_quick_match(query)
+def _build_response(query: str, history: list[ChatMessage] | None = None):
+    history = history or []
+    resolved_query, original_follow_up = _resolve_follow_up(query, history)
+
+    quick_match = find_quick_match(resolved_query)
     if quick_match and quick_match.mode == "direct":
         return {
             "results": quick_match.answer.answer,
@@ -54,14 +106,22 @@ def _build_response(query: str):
             "context": [quick_context(quick_match)],
             "answer_mode": "quick",
             "similarity": quick_match.score,
+            "resolved_query": resolved_query,
+            "original_query": original_follow_up or query,
         }
 
-    context_docs = retrieve(query)
+    context_docs = retrieve(resolved_query)
     context_text = "\n\n---\n\n".join(doc.page_content for doc in context_docs)
     if quick_match and quick_match.mode == "assist":
         context_text = f"{quick_context(quick_match)}\n\n---\n\n{context_text}"
 
-    result = ask_question(query, context=context_text)
+    if history:
+        conversation_context = "\n".join(
+            f"{item.role}: {item.content}" for item in history[-6:] if item.content.strip()
+        )
+        context_text = f"Histórico recente da conversa:\n{conversation_context}\n\n---\n\n{context_text}"
+
+    result = ask_question(resolved_query, context=context_text)
     sources = []
     seen = set()
     if quick_match and quick_match.mode == "assist":
@@ -94,6 +154,8 @@ def _build_response(query: str):
         "context": ([quick_context(quick_match)] if quick_match else []) + [doc.page_content for doc in context_docs],
         "answer_mode": quick_match.mode if quick_match else "rag",
         "similarity": quick_match.score if quick_match else None,
+        "resolved_query": resolved_query,
+        "original_query": original_follow_up or query,
     }
 
 
@@ -122,4 +184,28 @@ def query_vector_store(query: str):
 
 @app.post("/api/query")
 def query_vector_store_post(payload: QuestionRequest):
-    return _build_response(payload.query)
+    return _build_response(payload.query, payload.history)
+
+
+@app.get("/api/suggestions")
+def suggestions():
+    questions = []
+    seen = set()
+    for answer in load_quick_answers():
+        question = answer.canonical_question.strip()
+        folded = _fold(question)
+        if question and folded not in seen:
+            seen.add(folded)
+            questions.append(question)
+
+    fallback = [
+        "Quantos créditos compõem a grade curricular?",
+        "Quais são os requisitos para fazer a qualificação?",
+        "Qual o prazo para entregar a versão final após a defesa?",
+        "Quais documentos preciso para solicitar a defesa?",
+        "Como funcionam as atividades complementares?",
+        "Quais disciplinas são de formação geral?",
+    ]
+    pool = questions or fallback
+    amount = min(4, len(pool))
+    return {"suggestions": random.sample(pool, amount)}
