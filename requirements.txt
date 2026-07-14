@@ -8,3 +8,4 @@ pypdf
 ollama
 pydantic
 python-dotenv
+openpyxl
