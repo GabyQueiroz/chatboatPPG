@@ -34,39 +34,6 @@ Depois acesse:
 - FAQ: http://127.0.0.1:8000/static/faq.html
 - Swagger/API: http://127.0.0.1:8000/docs
 
-## Publicar no Render
-
-Este repositório já inclui front e backend juntos:
-
-- Frontend estático em `static/`.
-- Backend FastAPI em `main.py`.
-- Configuração do Render em `render.yaml`.
-- Comando alternativo em `Procfile`.
-
-No Render:
-
-1. Crie um novo **Web Service** a partir deste repositório.
-2. Use Python como ambiente.
-3. Build command:
-
-```bash
-pip install -r requirements.txt
-```
-
-4. Start command:
-
-```bash
-uvicorn main:app --host 0.0.0.0 --port $PORT
-```
-
-5. Configure a variável de ambiente `OLLAMA_HOST` apontando para um servidor Ollama acessível pela internet.
-
-Importante: o Render não fornece automaticamente os modelos do Ollama. O chatbot usa:
-
-- `gemma3:4b`
-- `nomic-embed-text`
-
-Então o `OLLAMA_HOST` precisa apontar para uma instância Ollama onde esses modelos já estejam baixados. Sem isso, o site sobe, mas as respostas do chatbot não funcionam.
 
 ## Endpoints
 
