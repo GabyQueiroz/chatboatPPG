@@ -61,9 +61,19 @@ def _normalize(text: str) -> str:
     text = re.sub(r"[^a-z0-9@./:-]+", " ", text)
     return re.sub(r"\s+", " ", text).strip()
 
+#Stem corta sufixos para melhorar busca semântica da mesma variação
+
+def _stem(word: str) -> str:
+    suffixes = ("ador", "adora", "acao", "ação", "ativo", "ativa", "mente", "s")
+    for suffix in sorted(suffixes, key=len, reverse=True):
+        if word.endswith(suffix) and len(word) - len(suffix) >= 4:
+            return word[: -len(suffix)]
+    return word
+
 
 def _tokens(text: str) -> set[str]:
-    return {word for word in _normalize(text).split() if len(word) >= 3 and word not in STOPWORDS}
+    raw_tokens = {word for word in _normalize(text).split() if len(word) >= 3 and word not in STOPWORDS}
+    return {_stem(word) for word in raw_tokens}
 
 
 def _clean_markdown(text: str) -> str:
