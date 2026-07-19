@@ -65,6 +65,9 @@ def _recent_user_context(history: list[ChatMessage], limit: int = 4) -> str:
 
 
 def _resolve_follow_up(query: str, history: list[ChatMessage]) -> tuple[str, str | None]:
+    """Detecta pergunta de acompanhamento MAS nunca deve alterar a query usada
+    para busca (quick match / retrieval). Serve só para decidir se vale
+    reforçar o contexto conversacional que já é passado separadamente ao LLM."""
     query_tokens = _tokens(query)
     recent_context = _recent_user_context(history)
     context_tokens = _tokens(recent_context)
@@ -76,12 +79,9 @@ def _resolve_follow_up(query: str, history: list[ChatMessage]) -> tuple[str, str
     asks_hours = bool({"hora", "horas", "carga", "horaria"} & query_tokens)
     previous_credit_topic = bool({"credito", "creditos"} & context_tokens)
 
-    if is_short_follow_up and asks_hours and previous_credit_topic:
+    if is_short_follow_up and asks_hours and previous_credit_topic and not ({"credito", "creditos"} & query_tokens):
         resolved = "Quantas horas correspondem ao total de créditos do mestrado?"
         return resolved, query
-
-    if is_short_follow_up and query_tokens:
-        return f"{query}. Contexto da conversa anterior: {recent_context}", query
 
     return query, None
 
