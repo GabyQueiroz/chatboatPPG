@@ -251,9 +251,17 @@ def find_quick_match(query: str, threshold: float = SUGGEST_THRESHOLD) -> Option
     if not best_answer or best_score < threshold:
         return None
 
-    if best_score >= DIRECT_THRESHOLD or (best_score >= 0.58 and _shares_important_term(query, best_answer)):
+    # Score alto (>=0.86) e' a unica situacao em que pulamos o RAG por
+    # completo. Score intermediario com termo importante em comum (ex:
+    # perguntas que citam "suficiencia"/"lingua"/"estrangeira" mas perguntam
+    # coisas diferentes, como um exame especifico) NAO deve mais responder
+    # "direct" - isso estava disparando respostas engessadas da planilha para
+    # perguntas de tema parecido mas conteudo diferente. Agora cai para
+    # "assist": o RAG roda normalmente e so recebe a resposta da planilha
+    # como contexto extra, sem bypassar a geração.
+    if best_score >= DIRECT_THRESHOLD:
         mode = "direct"
-    elif best_score >= ASSIST_THRESHOLD:
+    elif best_score >= ASSIST_THRESHOLD or (best_score >= 0.58 and _shares_important_term(query, best_answer)):
         mode = "assist"
     else:
         mode = "suggest"
@@ -272,8 +280,30 @@ def quick_context(match: QuickMatch) -> str:
     )
 
 
+_REFUSAL_PATTERNS = (
+    "nao tenho informacoes suficientes",
+    "nao tenho informacoes o suficiente",
+    "nao possuo informacoes suficientes",
+    "nao encontrei essa informacao",
+    "nao encontrei informacoes",
+    "nao ha informacoes suficientes",
+    "nao consta essa informacao",
+    "nao consta informacao",
+    "nao foi possivel encontrar",
+    "nao tenho essa informacao",
+    "nao tenho dados suficientes",
+    "nao disponho de informacoes",
+    "fora do escopo",
+    "nao esta contemplado",
+    "nao consigo responder",
+    "nao sei informar",
+    "sem informacoes suficientes",
+)
+
+
 def is_insufficient_answer(text: str) -> bool:
-    return "não tenho informações suficientes" in _fold(text or "")
+    folded = _fold(text or "")
+    return any(pattern in folded for pattern in _REFUSAL_PATTERNS)
 
 
 def sources_for_quick_match(match: QuickMatch) -> list[dict]:

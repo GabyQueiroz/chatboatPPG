@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 INPUT_CSV = "resultados_ragas.csv"
+RECUSAS_CSV = "resultados_recusas.csv"
 OUTPUT_DIR = "."  # pasta onde salvar os gráficos
 
 METRICS = ["faithfulness", "answer_relevancy", "context_precision", "context_recall"]
@@ -150,6 +151,46 @@ def plot_metric_by_question_heatmap(df: pd.DataFrame, n: int = 20):
     plt.close(fig)
 
 
+def print_refusal_summary(path: str):
+    try:
+        df = pd.read_csv(path, encoding="utf-8-sig")
+    except FileNotFoundError:
+        print(f"\n(Aviso: {path} não encontrado - rode o evaluate_csv.py atualizado para gera-lo.)")
+        return
+
+    print("\n" + "=" * 60)
+    print("ACURÁCIA DE RECUSA (separado das métricas RAGAS acima)")
+    print("=" * 60)
+
+    fora = df[df["categoria"] == "fora_de_escopo"]
+    resp = df[df["categoria"] != "fora_de_escopo"]
+
+    if len(fora):
+        acertos_fora = fora["correto"].sum()
+        print(f"\nPerguntas FORA DE ESCOPO (deveriam ser recusadas): {acertos_fora}/{len(fora)} corretas "
+              f"({acertos_fora/len(fora):.1%})")
+        for _, row in fora.iterrows():
+            if row["correto"]:
+                print(f"  [OK - recusou] {row['pergunta'][:70]}")
+            else:
+                resposta = str(row.get("resposta", ""))[:150]
+                print(f"  [ERRO - respondeu sem dever] {row['pergunta'][:70]}")
+                if resposta and resposta != 'nan':
+                    print(f"      -> respondeu: {resposta}")
+
+    if len(resp):
+        acertos_resp = resp["correto"].sum()
+        falsas_recusas = len(resp) - acertos_resp
+        print(f"\nPerguntas RESPONDÍVEIS (não deveriam ser recusadas): {acertos_resp}/{len(resp)} corretas "
+              f"({acertos_resp/len(resp):.1%}), {falsas_recusas} recusa(s) indevida(s)")
+        if falsas_recusas:
+            for _, row in resp[~resp["correto"]].iterrows():
+                resposta = str(row.get("resposta", ""))[:150]
+                print(f"  [ERRO - recusou indevidamente] {row['pergunta'][:70]}")
+                if resposta and resposta != 'nan':
+                    print(f"      -> respondeu: {resposta}")
+
+
 def main():
     df = load_data(INPUT_CSV)
 
@@ -160,6 +201,8 @@ def main():
     plot_correlation(df)
     plot_worst_questions(df, n=10)
     plot_metric_by_question_heatmap(df, n=15)
+
+    print_refusal_summary(RECUSAS_CSV)
 
     print("\n" + "=" * 60)
     print("Gráficos salvos:")

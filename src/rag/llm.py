@@ -3,7 +3,7 @@ import unicodedata
 
 import ollama
 
-LLM_MODEL = "gemma3:4b"
+LLM_MODEL = "qwen2.5:7b"
 
 SYSTEM_PROMPT = """
 Você é um assistente extremamente preciso sobre o Mestrado Profissional em Direito da UEPG.
@@ -40,11 +40,26 @@ def _fold(text: str) -> str:
 def _direct_url_answer(question: str, context: str) -> str | None:
     if not URL_QUERY_RE.search(question):
         return None
-    urls = URL_RE.findall(context or "")
+    if not context:
+        return None
+
+    urls = URL_RE.findall(context)
     if not urls:
         return None
 
     lowered_question = question.lower()
+
+    question_terms = [w for w in re.findall(r"[\wçãõáéíóúâêô]+", _fold(lowered_question)) if len(w) >= 4]
+    """ folded_context = _fold(context) """
+    for match in re.finditer(URL_RE, context):
+        url = match.group(0)
+        if "instagram" in lowered_question and "instagram" not in url.lower():
+            continue
+        window_start = max(0, match.start() - 120)
+        window = _fold(context[window_start:match.start()])
+        if any(term in window for term in question_terms if term not in ("site", "pode", "passar")):
+            return url.rstrip(".,;")
+
     for url in urls:
         if "instagram" in lowered_question and "instagram" not in url.lower():
             continue
@@ -69,9 +84,14 @@ def _direct_contact_answer(question: str, context: str) -> str | None:
 def _direct_academic_answer(question: str, context: str) -> str | None:
     folded_question = _fold(question)
     folded_context = _fold(context)
+    """ Verifica se a pergunta é sobre créditos. """
 
     asks_credits = "credito" in folded_question or "creditos" in folded_question
-    asks_total = any(term in folded_question for term in ["tenho que ter", "preciso ter", "total", "quantos"])
+   
+    mentions_specific_discipline = "disciplina" in folded_question or "materia" in folded_question
+    asks_total = (not mentions_specific_discipline) and any(
+        term in folded_question for term in ["tenho que ter", "preciso ter", "total", "quantos"]
+    )
     has_total = "totalizam-se 33" in folded_context or "33 (trinta e tres) creditos" in folded_context
 
     if asks_credits and asks_total and has_total:
@@ -112,6 +132,7 @@ def ask_question(question: str, context: str = "") -> str:
         ],
         options={
             "temperature": 0,
+            "num_ctx": 8192,
         },
     )
 
