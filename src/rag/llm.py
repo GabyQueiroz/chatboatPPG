@@ -18,6 +18,7 @@ Regras:
 - Para perguntas que não pedem link, não inclua URLs, salvo se elas forem parte indispensável da resposta.
 - Quando houver regra geral e exceção por turma/ano, explique a regra e a exceção aplicável.
 - Não invente nomes, datas, prazos, documentos, artigos ou procedimentos.
+- Quando a resposta for um dado isolado (um número, uma data, um contato), não responda só o dado seco: retome brevemente o assunto perguntado na mesma frase. Exemplo: em vez de "60 horas.", responda "O estágio de imersão prático-institucional totaliza 60 horas.". Isso vale só para dar contexto à resposta curta — continue direto e sem rodeios, sem adicionar informação que não foi pedida.
 
 Exemplo de recusa:
 Desculpe, não tenho informações suficientes para responder a essa pergunta.
@@ -71,12 +72,12 @@ def _direct_contact_answer(question: str, context: str) -> str | None:
     if EMAIL_QUERY_RE.search(question):
         emails = EMAIL_RE.findall(context or "")
         if emails:
-            return emails[0].rstrip(".,;")
+            return f"O e-mail do mestrado é {emails[0].rstrip('.,;')}"
 
     if PHONE_QUERY_RE.search(question):
         phones = PHONE_RE.findall(context or "")
         if phones:
-            return phones[0].strip().rstrip(".,;")
+            return f"O ramal de contato do mestrado é {phones[0].strip().rstrip('.,;')}"
 
     return None
 
@@ -84,12 +85,15 @@ def _direct_contact_answer(question: str, context: str) -> str | None:
 def _direct_academic_answer(question: str, context: str) -> str | None:
     folded_question = _fold(question)
     folded_context = _fold(context)
-    """ Verifica se a pergunta é sobre créditos. """
+    """ Verifica se a pergunta e' sobre o total de creditos do CURSO como um
+    todo (nao de uma disciplina/estagio/item especifico). """
 
     asks_credits = "credito" in folded_question or "creditos" in folded_question
-   
-    mentions_specific_discipline = "disciplina" in folded_question or "materia" in folded_question
-    asks_total = (not mentions_specific_discipline) and any(
+
+    mentions_whole_program = any(
+        term in folded_question for term in ["curso", "programa", "mestrado", "integraliza", "grade curricular"]
+    )
+    asks_total = mentions_whole_program and any(
         term in folded_question for term in ["tenho que ter", "preciso ter", "total", "quantos"]
     )
     has_total = "totalizam-se 33" in folded_context or "33 (trinta e tres) creditos" in folded_context
