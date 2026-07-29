@@ -1,10 +1,10 @@
 import json
 import os
 
-from ..rag import load_docs, chunk_data, get_vector_store
+from ..rag import chunk_data, get_vector_store, load_docs
 
 MANIFEST_PATH = os.path.join("db", "chroma", "manifest.json")
-INGESTION_VERSION = 3  # bump: chunker.py agora divide por artigo + overlap reduzido (300->150)
+INGESTION_VERSION = 3
 
 
 def build_manifest():
@@ -64,11 +64,6 @@ def ingest_data():
     documents = load_docs()
     chunked_data = chunk_data(documents)
 
-    # Defesa contra IDs duplicados: pode acontecer (ex: um PDF sendo
-    # carregado/mesclado mais de uma vez, ou dois artigos com texto
-    # byte-a-byte identico) e o Chroma rejeita o upsert inteiro se achar
-    # qualquer duplicata. Deduplicamos aqui por chunk_id, mantendo a
-    # primeira ocorrencia, em vez de deixar o processo de ingestao quebrar.
     seen_ids = set()
     deduped_chunks = []
     for doc in chunked_data:
@@ -79,23 +74,22 @@ def ingest_data():
         deduped_chunks.append(doc)
 
     if len(deduped_chunks) != len(chunked_data):
-        print(f"Aviso: {len(chunked_data) - len(deduped_chunks)} chunk(s) duplicado(s) removido(s) antes da ingestão.")
+        removed = len(chunked_data) - len(deduped_chunks)
+        print(f"{removed} chunk(s) duplicado(s) removido(s) antes da ingestão.")
 
-    chunked_data = deduped_chunks
-    ids = [doc.metadata["chunk_id"] for doc in chunked_data]
-
+    ids = [doc.metadata["chunk_id"] for doc in deduped_chunks]
     vector_store = get_vector_store()
 
     existing_ids = vector_store._collection.get()["ids"]
     if existing_ids:
         vector_store._collection.delete(ids=existing_ids)
 
-    if chunked_data:
-        vector_store.add_documents(chunked_data, ids=ids)
+    if deduped_chunks:
+        vector_store.add_documents(deduped_chunks, ids=ids)
 
     save_manifest(manifest)
     total_docs = len(vector_store._collection.get()["ids"])
-    print(f"Ingested {len(chunked_data)} documents. Total documents in vector store: {total_docs}")
+    print(f"Ingested {len(deduped_chunks)} documents. Total documents in vector store: {total_docs}")
 
 
 if __name__ == "__main__":

@@ -63,21 +63,16 @@ def load_docs():
         pdf_docs = pdf_loader.load()
         for doc in pdf_docs:
             doc.page_content = normalize_text(doc.page_content)
-        # PyPDFLoader carrega uma pagina por Document. Isso pode cortar um
-        # artigo de instrucao normativa bem no meio, na fronteira de pagina.
-        # Juntamos aqui todas as paginas do MESMO arquivo PDF em um unico
-        # Document (uma string so, na ordem das paginas), para que o
-        # chunker.py consiga dividir por "Art. N" sem artefato de paginacao.
+
         pages_by_source: dict[str, list] = {}
         for doc in pdf_docs:
             source = doc.metadata.get("source", "")
             pages_by_source.setdefault(source, []).append(doc)
 
         for source, pages in pages_by_source.items():
-            pages.sort(key=lambda d: d.metadata.get("page", 0))
-            merged_text = "\n".join(p.page_content for p in pages if p.page_content)
-            merged_doc = Document(page_content=merged_text, metadata={"source": source, "page": "merged"})
-            documents.append(merged_doc)
+            pages.sort(key=lambda item: item.metadata.get("page", 0))
+            merged_text = "\n".join(page.page_content for page in pages if page.page_content)
+            documents.append(Document(page_content=merged_text, metadata={"source": source, "page": "merged"}))
     else:
         print(f"PDF directory '{pdf_directory}' does not exist.")
 

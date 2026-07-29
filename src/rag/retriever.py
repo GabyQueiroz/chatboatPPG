@@ -4,8 +4,8 @@ from typing import Iterable, List, Optional
 
 from langchain_core.documents import Document
 
-from .vector_store import get_vector_store
 from .reranker import rerank
+from .vector_store import get_vector_store
 
 STOPWORDS = {
     "a", "ao", "aos", "as", "ate", "com", "como", "da", "das", "de", "do",
@@ -27,6 +27,14 @@ STOPWORDS = {
     "falar", "fala", "explicar", "explica",
 }
 
+_CORPUS_CACHE: Optional[List[Document]] = None
+
+
+def _fold(text: str) -> str:
+    normalized = unicodedata.normalize("NFKD", text or "")
+    without_accents = "".join(ch for ch in normalized if not unicodedata.combining(ch))
+    return without_accents.lower()
+
 
 def _normalize_query(text: str) -> str:
     if not text:
@@ -38,55 +46,63 @@ def _normalize_query(text: str) -> str:
 def _expand_query(text: str) -> str:
     folded = _fold(text)
     expansions = []
-    if any(t in folded for t in ["prazo", "periodo", "prorrog"]) and any(term in folded for term in ["conclusao", "concluir", "finalizacao", "terminar"]):
-        expansions.append("grade curricular integralizada 24 vinte e quatro meses possibilidade prorrogação 06 seis meses artigo 34 instrução normativa 06 2024")
+    if any(term in folded for term in ["telefone", "ramal", "ligar", "contato", "email", "e-mail"]):
+        expansions.append("contato email ramal telefone secretaria mestrado ppgd")
+    if any(term in folded for term in ["site", "link", "instagram", "secijur", "pagina", "redes sociais"]):
+        expansions.append("site oficial url secijur instagram redes sociais direito uepg")
+    if any(term in folded for term in ["prazo", "periodo", "prorrog"]) and any(
+        term in folded for term in ["conclusao", "concluir", "finalizacao", "terminar"]
+    ):
+        expansions.append(
+            "grade curricular integralizada 24 vinte e quatro meses possibilidade prorrogacao 06 seis meses artigo 34 instrucao normativa 06 2024"
+        )
+    if "fomento" in folded:
+        expansions.append("vagas de fomento agosto ano letivo coordenador colegiado instituicoes requerentes")
     if "qualificacao" in folded:
-        expansions.append("exame de qualificação artigo 40 créditos suficiência língua estrangeira projeto artigo")
+        expansions.append("exame de qualificacao artigo 40 creditos suficiencia lingua estrangeira projeto artigo")
     if "suficiencia" in folded or "lingua estrangeira" in folded:
-        expansions.append("suficiência língua estrangeira inglês espanhol final do 1º semestre")
+        expansions.append("suficiencia lingua estrangeira ingles espanhol final do primeiro semestre")
+    if "michigan" in folded or "ecce" in folded:
+        expansions.append("michigan ecce 650 seiscentos e cinquenta pontos suficiencia lingua estrangeira")
     if "defesa" in folded and any(term in folded for term in ["versao final", "deposito", "entregar", "prazo"]):
-        expansions.append("60 sessenta dias após defesa pública versão final dissertação trabalho final")
-    if "credito" in folded and "disciplina" not in folded and any(term in folded for term in ["quantos", "total", "tenho", "preciso", "exigidos"]):
-        expansions.append("artigo 34 totalizam-se 33 trinta e três créditos composição curricular grade curricular")
+        expansions.append("60 sessenta dias apos defesa publica versao final dissertacao trabalho final")
+    if "credito" in folded and "disciplina" not in folded and any(
+        term in folded for term in ["quantos", "total", "tenho", "preciso", "exigidos"]
+    ):
+        expansions.append("artigo 34 totalizam-se 33 trinta e tres creditos composicao curricular grade curricular")
     if "credito" in folded and "disciplina" in folded:
-        expansions.append("disciplinas créditos carga horária 45 3 três")
-    if "estagio" in folded and any(t in folded for t in ["lugar", "local", "instituicao", "unidade"]):
-        expansions.append("mais de uma unidade supervisora pluralidade dos campos de estágio termos de compromisso declarações de carga horária distintas")
+        expansions.append("disciplinas creditos carga horaria 45 3 tres")
+    if "docencia" in folded:
+        expansions.append("estagio de docencia 2 creditos")
+    if any(term in folded for term in ["laboratorio", "chave", "agendamento", "reserva"]):
+        expansions.append("laboratorio secretaria ppgd agendamento 7 dias antecedencia horario funcionamento")
+    if "estagio" in folded and any(term in folded for term in ["lugar", "local", "instituicao", "unidade"]):
+        expansions.append(
+            "mais de uma unidade supervisora pluralidade dos campos de estagio termos de compromisso declaracoes de carga horaria distintas"
+        )
     if not expansions:
         return text
     return f"{text} {' '.join(expansions)}"
 
 
-def _fold(text: str) -> str:
-    normalized = unicodedata.normalize("NFKD", text or "")
-    without_accents = "".join(ch for ch in normalized if not unicodedata.combining(ch))
-    return without_accents.lower()
-
-
 def _extract_keywords(text: str) -> List[str]:
     words = re.findall(r"[\w@#./:-]+", _fold(text))
-    return [w for w in words if len(w) >= 4 and w not in STOPWORDS]
+    return [word for word in words if len(word) >= 4 and word not in STOPWORDS]
 
 
 def _contains_keywords(text: str, keywords: List[str]) -> bool:
     if not keywords:
         return False
     lowered = _fold(text)
-    return any(kw in lowered for kw in keywords)
+    return any(keyword in lowered for keyword in keywords)
 
 
 def _keyword_score(text: str, keywords: Iterable[str]) -> int:
     lowered = _fold(text)
-    return sum(1 for kw in keywords if kw in lowered)
-
-
-_CORPUS_CACHE: Optional[List[Document]] = None
+    return sum(1 for keyword in keywords if keyword in lowered)
 
 
 def _get_corpus_documents(vector_store) -> List[Document]:
-    """Carrega e cacheia (por processo) todos os chunks do Chroma, para
-    permitir busca textual completa e calculo de frequencia de termos sem
-    reescanear o banco a cada pergunta."""
     global _CORPUS_CACHE
     if _CORPUS_CACHE is not None:
         return _CORPUS_CACHE
@@ -106,26 +122,7 @@ def _get_corpus_documents(vector_store) -> List[Document]:
     return _CORPUS_CACHE
 
 
-""" def _keyword_document_frequencies(corpus: List[Document], keywords: List[str]) -> dict:
-    \""" Para cada keyword, conta em quantos chunks do corpus ela aparece.
-    Usado para pesar termos raros (ex: "fomento", "secijur", "teap") mais
-    do que termos genericos que aparecem em quase todo documento (ex:
-    "vagas", "disciplina", "programa") - sem isso, um chunk irrelevante que
-    so bate num termo comum pode empatar ou superar o chunk certo, que so
-    bate no termo especifico da pergunta. \"""
-    freqs = {kw: 0 for kw in keywords}
-    for doc in corpus:
-        lowered = _fold(doc.page_content)
-        for kw in keywords:
-            if kw in lowered:
-                freqs[kw] += 1
-    return freqs
- """
-
-def _full_corpus_keyword_search(vector_store, keywords: List[str], limit: int = 20) -> List:
-    """Necessario porque termos raros/siglas (ex: "TEAP", nomes de
-    exames, numeros de instrucao normativa)
-    """
+def _full_corpus_keyword_search(vector_store, keywords: List[str], limit: int = 20) -> List[Document]:
     if not keywords:
         return []
 
@@ -138,7 +135,28 @@ def _full_corpus_keyword_search(vector_store, keywords: List[str], limit: int = 
     return hits[:limit]
 
 
-def _dedupe_documents(documents: Iterable) -> List:
+def _source_matches(doc, preferred_sources: Iterable[str]) -> bool:
+    if not preferred_sources:
+        return False
+    source = _fold(str(doc.metadata.get("source", "")))
+    return any(_fold(fragment) in source for fragment in preferred_sources if fragment)
+
+
+def _apply_source_preference(documents: Iterable[Document], preferred_sources: Iterable[str], keywords: List[str]) -> List[Document]:
+    documents = list(documents)
+    if not preferred_sources:
+        return documents
+    return sorted(
+        documents,
+        key=lambda doc: (
+            1 if _source_matches(doc, preferred_sources) else 0,
+            _keyword_score(doc.page_content, keywords),
+        ),
+        reverse=True,
+    )
+
+
+def _dedupe_documents(documents: Iterable[Document]) -> List[Document]:
     seen = set()
     deduped = []
     for doc in documents:
@@ -161,31 +179,15 @@ def retrieve(
     use_mmr: bool = True,
     lambda_mult: float = 0.35,
     max_distance: Optional[float] = 0.6,
-) -> List:
+    preferred_sources: Optional[Iterable[str]] = None,
+) -> List[Document]:
     vector_store = get_vector_store()
     normalized_query = _normalize_query(query)
     search_query = _expand_query(normalized_query)
     keywords = _extract_keywords(search_query)
-
-    # Gate de confiança: antes de tudo, olha só o melhor match semântico. Se
-    # nem o resultado MAIS próximo bate um limiar minimo de similaridade,
-    # a pergunta provavelmente não tem resposta no corpus (ex: "O que é a
-    # UEPG?" - genérico demais, sempre "acha" algo por keyword/MMR mesmo sem
-    # ter nada realmente relevante). Sem esse gate, o sistema nunca recusava
-    # por falta de relevância de verdade - só quando a busca vinha vazia.
-    """ if max_distance is not None:
-        try:
-            top_match = vector_store.similarity_search_with_score(search_query, k=1)
-        except Exception:
-            top_match = []
-        if top_match and top_match[0][1] > max_distance:
-            return [] """
+    preferred_sources = tuple(preferred_sources or ())
 
     if use_mmr:
-        # Pool de candidatos maior que k: reunimos mais opcoes do que o
-        # necessario (MMR + keyword hits) e deixamos o cross-encoder (rerank)
-        # escolher os k melhores de verdade no final, em vez de confiar so na
-        # heuristica de contagem de keyword para o corte final.
         candidate_pool_size = min(max(k * 2, 20), fetch_k)
         semantic_results = vector_store.max_marginal_relevance_search(
             search_query,
@@ -197,20 +199,18 @@ def retrieve(
         if keywords:
             keyword_hits = _full_corpus_keyword_search(vector_store, keywords, limit=max(k, 10))
             candidates = _dedupe_documents(keyword_hits[:candidate_pool_size] + semantic_results + keyword_hits)
-            candidates.sort(key=lambda doc: _keyword_score(doc.page_content, keywords), reverse=True)
+            candidates = _apply_source_preference(candidates, preferred_sources, keywords)
         else:
-            candidates = semantic_results
+            candidates = _apply_source_preference(semantic_results, preferred_sources, keywords)
 
-        # Reranking com cross-encoder real (query, chunk) por cima do pool de
-        # candidatos - ver reranker.py. Se o modelo nao estiver disponivel,
-        # rerank() degrada de volta para os top-k do ranking anterior, sem
-        # quebrar o fluxo.
         return rerank(normalized_query, candidates[:candidate_pool_size], top_k=k)
 
     scored = vector_store.similarity_search_with_score(search_query, k=fetch_k)
     if max_distance is not None:
         filtered = [doc for doc, score in scored if score <= max_distance]
         if filtered:
+            filtered = _apply_source_preference(filtered, preferred_sources, keywords)
             return rerank(normalized_query, filtered, top_k=k)
 
-    return rerank(normalized_query, [doc for doc, _ in scored], top_k=k)
+    docs = _apply_source_preference([doc for doc, _ in scored], preferred_sources, keywords)
+    return rerank(normalized_query, docs, top_k=k)

@@ -20,7 +20,9 @@ from src.rag import (
     retrieve,
     sources_for_quick_match,
 )
+from src.rag.intents import preferred_source_fragments, should_expand_with_history
 from src.rag.quick_answers import load_quick_answers
+from src.rag.structured_answers import resolve_structured_answer
 
 app = FastAPI(title="Chatbot Acadêmico PPGD/UEPG")
 
@@ -54,94 +56,129 @@ def _fold(text: str) -> str:
     return without_accents.lower()
 
 
-def _tokens(text: str) -> set[str]:
-    folded = _fold(text)
-    return set(re.findall(r"[a-z0-9]+", folded))
-
-
 def _recent_user_context(history: list[ChatMessage], limit: int = 4) -> str:
     user_messages = [item.content for item in history if item.role == "user" and item.content.strip()]
     return " ".join(user_messages[-limit:])
 
 
-def _resolve_follow_up(query: str, history: list[ChatMessage]) -> tuple[str, str | None]:
-    """Detecta pergunta de acompanhamento MAS nunca deve alterar a query usada
-    para busca (quick match / retrieval). Serve só para decidir se vale
-    reforçar o contexto conversacional que já é passado separadamente ao LLM.
-    """
-    return query, None
+def _resolve_follow_up(query: str, history: list[ChatMessage]) -> tuple[str, str]:
+    history_context = _recent_user_context(history, limit=2)
+    if history_context and should_expand_with_history(query):
+        return f"{query} {history_context}".strip(), history_context
+    return query, history_context
 
 
 def _source_label(metadata: dict) -> str:
     source = str(metadata.get("source", "documento")).replace("\\", "/")
     page = metadata.get("page")
-    if page is None or page == "":
+    if page is None or page == "" or page == "merged":
         return source
     return f"{source}, página {int(page) + 1}"
 
 
-def _build_response(query: str, history: list[ChatMessage] | None = None):
-    history = history or []
-    resolved_query, original_follow_up = _resolve_follow_up(query, history)
-
-    quick_match = find_quick_match(resolved_query)
-    if quick_match and quick_match.mode == "direct":
-        return {
-            "results": quick_match.answer.answer,
-            "sources": sources_for_quick_match(quick_match),
-            "context": [quick_context(quick_match)],
-            "answer_mode": "quick",
-            "similarity": quick_match.score,
-            "resolved_query": resolved_query,
-            "original_query": original_follow_up or query,
-        }
-
-    context_docs = retrieve(resolved_query)
-    context_text = "\n\n---\n\n".join(doc.page_content for doc in context_docs)
-    if quick_match and quick_match.mode == "assist":
-        context_text = f"{quick_context(quick_match)}\n\n---\n\n{context_text}"
-
-    if history:
-        conversation_context = "\n".join(
-            f"{item.role}: {item.content}" for item in history[-6:] if item.content.strip()
-        )
-        context_text = f"Histórico recente da conversa:\n{conversation_context}\n\n---\n\n{context_text}"
-
-    result = ask_question(resolved_query, context=context_text)
+def _collect_sources(context_docs, quick_match=None) -> list[dict]:
     sources = []
     seen = set()
-    if quick_match and quick_match.mode == "assist":
-        sources.extend(sources_for_quick_match(quick_match))
-        seen.add(sources[0]["source"])
+
+    if quick_match:
+        for item in sources_for_quick_match(quick_match):
+            if item["source"] in seen:
+                continue
+            seen.add(item["source"])
+            sources.append(item)
 
     for doc in context_docs:
         label = _source_label(doc.metadata)
         if label in seen:
             continue
         seen.add(label)
-        sources.append(
-            {
-                "source": label,
-                "excerpt": doc.page_content[:420],
-            }
+        sources.append({"source": label, "excerpt": doc.page_content[:420]})
+
+    return sources
+
+
+def _retrieve_context_docs(query: str, history: list[ChatMessage], answer_source: str = "", k: int = 8):
+    search_query, history_hint = _resolve_follow_up(query, history)
+    preferred_sources = preferred_source_fragments(query, history_hint, answer_source=answer_source)
+    return retrieve(search_query, k=k, preferred_sources=preferred_sources)
+
+
+def _build_response(query: str, history: list[ChatMessage] | None = None):
+    history = history or []
+    structured_answer = resolve_structured_answer(query)
+    if structured_answer:
+        return {
+            "results": structured_answer.answer,
+            "sources": [{"source": structured_answer.source, "excerpt": structured_answer.context[:420]}],
+            "context": [structured_answer.context],
+            "answer_mode": "structured",
+            "similarity": 1.0,
+            "resolved_query": query,
+            "original_query": query,
+        }
+
+    quick_match = find_quick_match(query)
+
+    if quick_match and quick_match.mode == "direct":
+        context_docs = _retrieve_context_docs(
+            f"{quick_match.answer.canonical_question} {query}",
+            history,
+            answer_source=quick_match.answer.source,
+            k=5,
         )
+        return {
+            "results": quick_match.answer.answer,
+            "sources": _collect_sources(context_docs, quick_match=quick_match),
+            "context": [quick_context(quick_match)] + [doc.page_content for doc in context_docs],
+            "answer_mode": "quick",
+            "similarity": quick_match.score,
+            "resolved_query": query,
+            "original_query": query,
+        }
+
+    context_docs = _retrieve_context_docs(
+        quick_match.answer.canonical_question if quick_match and quick_match.mode == "assist" else query,
+        history,
+        answer_source=quick_match.answer.source if quick_match else "",
+        k=8,
+    )
+    context_text = "\n\n---\n\n".join(doc.page_content for doc in context_docs)
+
+    if quick_match and quick_match.mode == "assist":
+        context_text = f"{quick_context(quick_match)}\n\n---\n\n{context_text}" if context_text else quick_context(quick_match)
+
+    if history:
+        conversation_context = "\n".join(
+            f"{item.role}: {item.content}" for item in history[-6:] if item.content.strip()
+        )
+        context_text = f"Histórico recente da conversa:\n{conversation_context}\n\n---\n\n{context_text}" if context_text else conversation_context
+
+    result = ask_question(query, context=context_text)
 
     if is_insufficient_answer(str(result)) and quick_match and quick_match.mode == "suggest":
-        result = (
-            "Não encontrei uma resposta exata para essa pergunta. "
-            f"Talvez você queira perguntar: \"{quick_match.answer.canonical_question}\". "
-            f"Resposta relacionada: {quick_match.answer.answer}"
-        )
-        sources = sources_for_quick_match(quick_match) + sources
+        suggestion_docs = _retrieve_context_docs(quick_match.answer.canonical_question, history, answer_source=quick_match.answer.source, k=4)
+        return {
+            "results": (
+                "Não encontrei uma resposta exata para essa pergunta. "
+                f'Talvez você queira perguntar: "{quick_match.answer.canonical_question}". '
+                f"Resposta relacionada: {quick_match.answer.answer}"
+            ),
+            "sources": _collect_sources(suggestion_docs, quick_match=quick_match),
+            "context": [quick_context(quick_match)] + [doc.page_content for doc in suggestion_docs],
+            "answer_mode": "suggest",
+            "similarity": quick_match.score,
+            "resolved_query": query,
+            "original_query": query,
+        }
 
     return {
         "results": str(result),
-        "sources": sources,
-        "context": ([quick_context(quick_match)] if quick_match else []) + [doc.page_content for doc in context_docs],
+        "sources": _collect_sources(context_docs, quick_match=quick_match if quick_match and quick_match.mode == "assist" else None),
+        "context": ([quick_context(quick_match)] if quick_match and quick_match.mode == "assist" else []) + [doc.page_content for doc in context_docs],
         "answer_mode": quick_match.mode if quick_match else "rag",
         "similarity": quick_match.score if quick_match else None,
-        "resolved_query": resolved_query,
-        "original_query": original_follow_up or query,
+        "resolved_query": query,
+        "original_query": query,
     }
 
 

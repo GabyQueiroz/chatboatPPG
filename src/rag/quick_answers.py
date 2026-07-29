@@ -193,7 +193,7 @@ def _direct_url_answer(question: str, context: str) -> str | None:
         return None
 
     lowered_question = question.lower()
-    question_terms = [w for w in re.findall(r"[\wçãõáéíóúâêô]+", _fold(lowered_question)) if len(w) >= 4]
+    question_terms = [word for word in re.findall(r"[\wçãõáéíóúâêô]+", _fold(lowered_question)) if len(word) >= 4]
 
     for match in re.finditer(r"https?://[^\s)>\"]+", context):
         url = match.group(0)
@@ -246,16 +246,6 @@ def _direct_academic_answer(question: str, context: str) -> str | None:
 
 
 def find_quick_match(query: str, threshold: float = SUGGEST_THRESHOLD) -> Optional[QuickMatch]:
-    # OBS: este arquivo já teve, em algum momento, um bloco grande de atalhos
-    # "hardcoded" por pergunta especifica (checando frases literais como
-    # "michigan ecce", "docencia", "qualificacao escandinava" etc, cada um
-    # devolvendo uma resposta pronta com score=1.0). Isso foi removido de
-    # proposito: aqueles atalhos so reconheciam a frase EXATA das perguntas
-    # do dataset de teste, entao qualquer aluno real perguntando a mesma
-    # coisa com outras palavras nunca cairia neles - o sistema parecia bom
-    # no RAGAS mas nao generalizava. A partir daqui, so existe o fuzzy-match
-    # generico contra a planilha/FAQ (por similaridade), que e' o mecanismo
-    # legitimo de atalho. Tudo o mais deve passar pelo RAG de verdade.
     best_answer = None
     best_score = 0.0
 
