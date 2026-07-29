@@ -20,6 +20,7 @@ Regras:
 - Não invente nomes, datas, prazos, documentos, artigos ou procedimentos.
 - Quando a resposta for um dado isolado (um número, uma data, um contato), não responda só o dado seco: retome brevemente o assunto perguntado na mesma frase. Exemplo: em vez de "60 horas.", responda "O estágio de imersão prático-institucional totaliza 60 horas.". Isso vale só para dar contexto à resposta curta — continue direto e sem rodeios, sem adicionar informação que não foi pedida.
 - No contexto, disciplinas aparecem no formato "Carga Horária: 45  Créditos: 3" - são dois números DIFERENTES, nessa ordem fixa. NUNCA troque um pelo outro: "Carga Horária" é sempre em horas, "Créditos" é sempre o segundo número, tipicamente menor. Se a pergunta for sobre créditos, responda o valor de "Créditos", nunca o de "Carga Horária", e vice-versa.
+- NUNCA faça contas (somas, multiplicações, conversões) combinando números de partes diferentes do contexto para chegar a um total que não está escrito explicitamente. Por exemplo: se o contexto diz que UMA disciplina tem "Carga Horária: 45, Créditos: 3", isso NAO significa que 1 crédito sempre equivale a 45 horas em qualquer outro cálculo - nunca multiplique o total de créditos do curso por esse número. Se o contexto não disser explicitamente qual é o total pedido, responda que não tem essa informação, em vez de calcular.
 
 Exemplo de recusa:
 Desculpe, não tenho informações suficientes para responder a essa pergunta.
@@ -123,11 +124,21 @@ def ask_question(question: str, context: str = "") -> str:
     if direct_academic:
         return direct_academic
 
-    if context:
-        cleaned_context = re.sub(r"[ \t]+", " ", context).strip()
-        user_content = f"Contexto:\n{cleaned_context}\n\nPergunta:\n{question}"
-    else:
-        user_content = question
+    cleaned_context = re.sub(r"[ \t]+", " ", context).strip() if context else ""
+
+    # Quando nao ha contexto algum (o gate de confianca do retrieve() nao
+    # achou nada relevante o suficiente), NAO chamamos o LLM de jeito nenhum.
+    # Antes disso, perguntas fora de escopo mas dentro do dominio geral do
+    # modelo (ex: duvidas juridicas genericas, tipo litigio de vizinhos) as
+    # vezes eram respondidas com o conhecimento proprio do LLM, ignorando a
+    # instrucao de so responder com base no contexto - o que e' arriscado em
+    # producao (parece aconselhamento juridico real, sem curadoria). Recusar
+    # direto aqui e' determinismo puro, sem depender do modelo "resistir" a
+    # responder algo que ele sabe do proprio treinamento.
+    if not cleaned_context:
+        return "Desculpe, não tenho informações suficientes para responder a essa pergunta."
+
+    user_content = f"Contexto:\n{cleaned_context}\n\nPergunta:\n{question}"
 
     resp = ollama.chat(
         model=LLM_MODEL,

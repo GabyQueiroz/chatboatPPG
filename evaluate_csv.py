@@ -134,8 +134,8 @@ def run_batch_evaluation(input_csv_path: str, output_csv_path: str):
     references_r = [references[i] for i in idx_respondivel]
 
     print("\n4. Inicializando juízes locais (llama3.1:8b)...")
-    local_llm = ChatOllama(model="llama3.1:8b", temperature=0)
-    local_embeddings = OllamaEmbeddings(model="nomic-embed-text")
+    local_llm = ChatOllama(model="llama3.1:8b", temperature=0, config={"device": "cuda"})
+    local_embeddings = OllamaEmbeddings(model="bge-m3")
     ragas_llm = LangchainLLMWrapper(local_llm)
     ragas_emb = LangchainEmbeddingsWrapper(local_embeddings)
 
@@ -149,7 +149,7 @@ def run_batch_evaluation(input_csv_path: str, output_csv_path: str):
     metrics = [faithfulness, answer_relevancy, context_precision, context_recall]
 
     run_configs = RunConfig(
-        max_workers=2,
+        max_workers=10,
         timeout=360
     )
 

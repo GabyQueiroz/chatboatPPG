@@ -5,6 +5,7 @@ from typing import Iterable, List, Optional
 from langchain_core.documents import Document
 
 from .vector_store import get_vector_store
+from .reranker import rerank
 
 STOPWORDS = {
     "a", "ao", "aos", "as", "ate", "com", "como", "da", "das", "de", "do",
@@ -166,25 +167,50 @@ def retrieve(
     search_query = _expand_query(normalized_query)
     keywords = _extract_keywords(search_query)
 
+    # Gate de confiança: antes de tudo, olha só o melhor match semântico. Se
+    # nem o resultado MAIS próximo bate um limiar minimo de similaridade,
+    # a pergunta provavelmente não tem resposta no corpus (ex: "O que é a
+    # UEPG?" - genérico demais, sempre "acha" algo por keyword/MMR mesmo sem
+    # ter nada realmente relevante). Sem esse gate, o sistema nunca recusava
+    # por falta de relevância de verdade - só quando a busca vinha vazia.
+    """ if max_distance is not None:
+        try:
+            top_match = vector_store.similarity_search_with_score(search_query, k=1)
+        except Exception:
+            top_match = []
+        if top_match and top_match[0][1] > max_distance:
+            return [] """
+
     if use_mmr:
+        # Pool de candidatos maior que k: reunimos mais opcoes do que o
+        # necessario (MMR + keyword hits) e deixamos o cross-encoder (rerank)
+        # escolher os k melhores de verdade no final, em vez de confiar so na
+        # heuristica de contagem de keyword para o corte final.
+        candidate_pool_size = min(max(k * 2, 20), fetch_k)
         semantic_results = vector_store.max_marginal_relevance_search(
             search_query,
-            k=k,
+            k=candidate_pool_size,
             fetch_k=fetch_k,
             lambda_mult=lambda_mult,
         )
-        if not keywords:
-            return semantic_results
 
-        keyword_hits = _full_corpus_keyword_search(vector_store, keywords, limit=max(k, 10))
-        combined = _dedupe_documents(keyword_hits[:k] + semantic_results + keyword_hits)
-        combined.sort(key=lambda doc: _keyword_score(doc.page_content, keywords), reverse=True)
-        return combined[:k]
+        if keywords:
+            keyword_hits = _full_corpus_keyword_search(vector_store, keywords, limit=max(k, 10))
+            candidates = _dedupe_documents(keyword_hits[:candidate_pool_size] + semantic_results + keyword_hits)
+            candidates.sort(key=lambda doc: _keyword_score(doc.page_content, keywords), reverse=True)
+        else:
+            candidates = semantic_results
+
+        # Reranking com cross-encoder real (query, chunk) por cima do pool de
+        # candidatos - ver reranker.py. Se o modelo nao estiver disponivel,
+        # rerank() degrada de volta para os top-k do ranking anterior, sem
+        # quebrar o fluxo.
+        return rerank(normalized_query, candidates[:candidate_pool_size], top_k=k)
 
     scored = vector_store.similarity_search_with_score(search_query, k=fetch_k)
     if max_distance is not None:
         filtered = [doc for doc, score in scored if score <= max_distance]
         if filtered:
-            return filtered[:k]
+            return rerank(normalized_query, filtered, top_k=k)
 
-    return [doc for doc, _ in scored[:k]]
+    return rerank(normalized_query, [doc for doc, _ in scored], top_k=k)
