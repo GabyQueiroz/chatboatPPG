@@ -288,6 +288,126 @@ O acervo informa que o Programa iniciou suas atividades em agosto de 2021, ocupa
 
 Fonte: `docs/texts/infraestrutura.txt`.
 
+### 46. Qual a ementa da disciplina de Processo Penal e Prática Judiciária?
+
+A ementa engloba os seguintes tópicos: O processo penal no contexto criminal e seus discursos (pós-CF/88), Princípios, garantias constitucionais e a aplicação pelos Tribunais Superiores, Investigação preliminar e a investigação defensiva, Crítica à Teoria Geral do Processo (jurisdição, ação e processo), A verdade, a prova lícita e ilícita, Medidas cautelares e o poder geral de cautela, Reformas na América Latina e o novo Código de Processo Penal, Justiça negocial e sua expansão, Práticas no sistema criminal “pós operação Lava-Jato”.
+
+Fonte: `docs/texts/ementas_disciplinas.txt`.
+
+### 47. Qual a ementa completa da disciplina de Promoção de políticas públicas e judicialização?
+
+A ementa aborda: Poder Judiciário no Estado e Judicialização da Política/Políticas Sociais, Juristocracia, Politização e Judicialização dos Direitos Coletivos, Limites e legitimidade da atuação do Poder Judiciário, Controle da Administração Pública e Constitucionalidade das Políticas Públicas, A jurisprudência do STF: decisões entre teorias constitucionais e governabilidade.
+
+Fonte: `docs/texts/ementas_disciplinas.txt`.
+
+### 48. Será que consigo aproveitamento numa disciplina que fiz no modelo remoto?
+
+Sim. Admite-se o aproveitamento de disciplinas cursadas nos formatos presencial, remoto ou híbrido.
+
+Fonte: `Instrucao-Normativa-n.-8-2024-sobre-aproveitamento-de-disciplinas-01-10-2024.pdf`.
+
+### 49. Qual a pontuação mínima no exame Michigan ECCE para comprovação de língua estrangeira?
+
+A pontuação mínima exigida neste exame é de 650 pontos.
+
+Fonte: `Instrucao-Normativa-n°-10-suficiencia-em-linguas.pdf`.
+
+### 50. O exame TEAP é aceito pela pós como suficiência em língua estrangeira?
+
+Sim. A pontuação mínima exigida no TEAP é de 70 pontos.
+
+Fonte: `Instrucao-Normativa-n°-10-suficiencia-em-linguas.pdf`.
+
+### 51. O que deve conter a introdução ampliada na dissertação de formato escandinavo?
+
+A introdução ampliada deve ter entre 3 e 10 páginas (podendo conter subtópicos) e incluir obrigatoriamente: O estado da arte, as justificativas da pesquisa, as hipóteses da pesquisa.
+
+Fonte: `INSTRUCAO-NORMATIVA-09.2025.pdf`.
+
+### 52. Na qualificação da dissertação escandinava, preciso já incluir as considerações finais?
+
+Não nesta etapa. O documento de qualificação no modelo alternativo deve apresentar apenas: Elementos básicos: Capa, contracapa, banca, resumo, abstract e sumário, Corpo principal: Introdução, metodologia e eventuais artigos (concluídos ou em andamento), Produto: Descrição do produto translacional.
+
+Fonte: `INSTRUCAO-NORMATIVA-09.2025.pdf`.
+
+### 53. Até quando as vagas de fomento podem ser ofertadas?
+
+As vagas são definidas até o mês de agosto de cada ano letivo, quando o Coordenador relata ao Colegiado o interesse das instituições parceiras e avalia os requisitos.
+
+Fonte: `IN-Normativa-12-2025-Vagas-de-Fomento-1.pdf`.
+
+### 54. Como fica o prazo do mestrado em caso de comprometimento de saúde (ex: acidentes)?
+
+Os impactos nos prazos por motivo de saúde são analisados caso a caso pelo Colegiado do Programa. O que fazer: Comunique formalmente a sua condição ao seu Orientador(a) e ao Colegiado o mais breve possível.
+
+Fonte: `Instrucao-Normativa-n-5-2024-Atividades-complementares-24-06-2024-atualizada-pela-IN-07-2024ATUALIZADA.pdf`.
+
+### 55. Existe período mínimo de atestado para solicitar o Regime de Exercícios Domiciliares (RED)?
+
+Sim. O RED não se aplica para atestados ou licenças inferiores a 15 dias.
+
+Fonte: `2018-08-21_Resolucao-CEPE-043-RED.pdf`.
+
+### 56. Sou mestranda bolsista da CAPES, em caso de gravidez eu perco a bolsa?
+
+Não. Os pagamentos não são suspensos durante a licença-maternidade. Porém, é necessário: Comunicar formalmente o afastamento à CAPES, enviar a confirmação da PROPESP (com datas exatas de início e fim), apresentar os documentos comprobatórios (gestação e nascimento).
+
+Fonte: `2018-08-21_Resolucao-CEPE-043-RED.pdf`.
+
+### 57. Quantos créditos valem o estágio de docência?
+
+O estágio de docência vale ao todo 2 créditos.
+
+Fonte: `TABELA-ATIVIDADES-COMPLEMNTARES-IN-05.2024-ATUALIZADA.pdf`.
+
+### 58. São quantas horas totais de estágio de imersão prático-institucional?
+
+O estágio exige um total de 60 horas.
+
+Fonte: `Instrucao-Normativa-n-5-2024-Atividades-complementares-24-06-2024-atualizada-pela-IN-07-2024ATUALIZADA.pdf`.
+
+### 59. É permitido realizar o estágio prático-institucional em mais de um lugar no mesmo período?
+
+Sim, desde que seja compatível com a sua pesquisa e carga horária. É obrigatório: Apresentar Termos de Compromisso e Declarações de Horas separados para cada local, citar a pluralidade de locais no seu projeto, no relatório final e no seminário.
+
+Fonte: `Instrucao-Normativa-n-5-2024-Atividades-complementares-24-06-2024-atualizada-pela-IN-07-2024ATUALIZADA.pdf`.
+
+### 60. Como faço para agendar o uso e pegar a chave do laboratório da pós?
+
+O agendamento é feito na Secretaria do PPGD (Segunda a sexta, das 08h30 às 17h30). Prazo: Mínimo de 7 dias de antecedência, Exceção: O prazo pode ser menor caso você não vá utilizar os equipamentos tecnológicos/audiovisuais do laboratório.
+
+Fonte: `Proposta-Ordem-de-Seviço-Laboratório-1.pdf`.
+
+### 61. Qual é o site do Setor de Ciências Jurídicas (SECIJUR)?
+
+O site oficial é: https://www2.uepg.br/direito/setor-de-ciencias-juridicas/
+
+Fonte: `docs/texts/contatos.txt`.
+
+### 62. Qual a pontuação mínima no IELTS para comprovar suficiência em língua estrangeira?
+
+A pontuação mínima a ser atingida no exame é 6 pontos.
+
+Fonte: `Instrucao-Normativa-n°-10-suficiencia-em-linguas.pdf`.
+
+### 63. O exame Cambridge ESOL Skills for Life pode ser aceito para comprovação em língua estrangeira?
+
+Sim, portanto que o resultado atingido seja "Pass".
+
+Fonte: `Instrucao-Normativa-n°-10-suficiencia-em-linguas.pdf`.
+
+### 64. Qual é o prazo para entregar o atestado e solicitar o RED?
+
+O prazo máximo para protocolar o atestado médico ou odontológico no Protocolo Geral da UEPG é de 3 dias úteis.  A contagem desse prazo se inicia na data de emissão que consta no atestado.  Pedidos realizados com atraso ou com falta de documentos serão indeferidos.
+
+Fonte: `2018-08-21_Resolucao-CEPE-043-RED.pdf`.
+
+### 65. O RED pode ser usado para justificar faltas em qualquer atividade do mestrado?
+
+Não. O Regime de Exercícios Domiciliares não se aplica nas seguintes situações: Estágios curriculares obrigatórios, práticas laboratoriais e componentes que exijam a presença física do discente. Sessões de Exame de Qualificação, Seminários e bancas de Defesa de Dissertação. Quando o discente já tiver extrapolado o limite máximo de faltas permitido na disciplina.  
+
+Fonte: `2018-08-21_Resolucao-CEPE-043-RED.pdf`.
+
 ## Fontes analisadas
 
 - `docs/texts/apresentacao.txt`

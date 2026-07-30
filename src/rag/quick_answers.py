@@ -177,8 +177,7 @@ def _load_from_workbook() -> list[QuickAnswer]:
 @lru_cache(maxsize=1)
 def load_quick_answers() -> tuple[QuickAnswer, ...]:
     entries = _load_from_workbook()
-    if not entries:
-        entries = _parse_faq_entries()
+    entries.extend(_parse_faq_entries())
     return tuple(entries)
 
 
