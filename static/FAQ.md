@@ -398,15 +398,27 @@ Fonte: `Instrucao-Normativa-n°-10-suficiencia-em-linguas.pdf`.
 
 ### 64. Qual é o prazo para entregar o atestado e solicitar o RED?
 
-O prazo máximo para protocolar o atestado médico ou odontológico no Protocolo Geral da UEPG é de 3 dias úteis.  A contagem desse prazo se inicia na data de emissão que consta no atestado.  Pedidos realizados com atraso ou com falta de documentos serão indeferidos.
+O prazo máximo para protocolar o atestado médico ou odontológico no Protocolo Geral da UEPG é de 3 dias úteis. A contagem desse prazo se inicia na data de emissão que consta no atestado. Pedidos realizados com atraso ou com falta de documentos serão indeferidos.
 
 Fonte: `2018-08-21_Resolucao-CEPE-043-RED.pdf`.
 
 ### 65. O RED pode ser usado para justificar faltas em qualquer atividade do mestrado?
 
-Não. O Regime de Exercícios Domiciliares não se aplica nas seguintes situações: Estágios curriculares obrigatórios, práticas laboratoriais e componentes que exijam a presença física do discente. Sessões de Exame de Qualificação, Seminários e bancas de Defesa de Dissertação. Quando o discente já tiver extrapolado o limite máximo de faltas permitido na disciplina.  
+Não. O Regime de Exercícios Domiciliares não se aplica nas seguintes situações: Estágios curriculares obrigatórios, práticas laboratoriais e componentes que exijam a presença física do discente. Sessões de Exame de Qualificação, Seminários e bancas de Defesa de Dissertação. Quando o discente já tiver extrapolado o limite máximo de faltas permitido na disciplina.
 
 Fonte: `2018-08-21_Resolucao-CEPE-043-RED.pdf`.
+
+### 66. O que é a UEPG?
+
+A Universidade Estadual de Ponta Grossa é uma das mais respeitadas instituições de ensino público e gratuito do Brasil, sendo a instituição de ensino superior de maior impacto regional. Está localizada no sul do país, em Ponta Grossa, cidade que é importante polo de desenvolvimento dos Campos Gerais, região com 19 municípios. Com mais de 50 anos, a UEPG é um complexo que forma estudantes na educação básica, ensino médio, graduação e pós-graduação.
+
+Fonte: `https://www.uepg.br/sobre-a-uepg/`.
+
+### 67. Qual o site oficial do mestrado?
+
+O site oficial é https://www2.uepg.br/direito/mestrado/
+
+Fonte: `https://www2.uepg.br/direito/mestrado/`
 
 ## Fontes analisadas
 
@@ -447,3 +459,5 @@ Fonte: `2018-08-21_Resolucao-CEPE-043-RED.pdf`.
 - `Requerimento_de_Defesa_MODELO.pdf`
 - `TABELA-ATIVIDADES-COMPLEMNTARES-IN-05.2024-ATUALIZADA.pdf`
 - `Termo-de-Autorizacao-para-publicacao.pdf`
+- `https://www.uepg.br/sobre-a-uepg/`
+- `https://www2.uepg.br/direito/mestrado/`
