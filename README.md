@@ -81,6 +81,7 @@ A integração com WhatsApp é possível via Meta WhatsApp Cloud API ou Twilio. 
 ### Variáveis de ambiente
 
 - `OLLAMA_HOST`: URL do Ollama local ou remoto. Exemplo: `http://127.0.0.1:11434` ou uma URL de Ollama Cloud.
+- `OLLAMA_API_KEY`: chave de acesso do Ollama Cloud quando o host for `https://ollama.com`.
 - `LLM_MODEL`: modelo gerador. Padrão: `qwen2.5:7b`.
 - `EMBED_MODEL`: modelo de embeddings. Padrão: `bge-m3`.
 - `AUTO_INGEST`: `true` ou `false`. Quando `true`, a base é preparada automaticamente ao subir.
