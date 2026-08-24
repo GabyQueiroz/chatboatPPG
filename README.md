@@ -11,7 +11,7 @@ Modelos usados:
 
 ```powershell
 ollama pull qwen2.5:7b
-ollama pull nomic-embed-text
+ollama pull bge-m3
 ```
 
 ## Instalação
@@ -33,7 +33,6 @@ Depois acesse:
 - Chat: http://127.0.0.1:8000
 - FAQ: http://127.0.0.1:8000/static/faq.html
 - Swagger/API: http://127.0.0.1:8000/docs
-
 
 ## Endpoints
 
