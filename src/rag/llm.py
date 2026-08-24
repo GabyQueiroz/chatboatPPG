@@ -1,9 +1,11 @@
 import re
 import unicodedata
+import os
 
 import ollama
 
-LLM_MODEL = "qwen2.5:7b"
+LLM_MODEL = os.getenv("LLM_MODEL", "qwen2.5:7b")
+OLLAMA_HOST = os.getenv("OLLAMA_HOST", "").strip()
 
 SYSTEM_PROMPT = """
 Você é um assistente extremamente preciso sobre o Mestrado Profissional em Direito da UEPG.
@@ -116,7 +118,8 @@ def ask_question(question: str, context: str = "") -> str:
         return "Desculpe, não tenho informações suficientes para responder a essa pergunta."
 
     user_content = f"Contexto:\n{cleaned_context}\n\nPergunta:\n{question}"
-    resp = ollama.chat(
+    client = ollama.Client(host=OLLAMA_HOST or None)
+    resp = client.chat(
         model=LLM_MODEL,
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},

@@ -1,5 +1,7 @@
 import random
 import re
+import os
+import threading
 import unicodedata
 from pathlib import Path
 from typing import Literal
@@ -14,6 +16,7 @@ from src.rag import (
     ask_question,
     find_quick_match,
     get_vector_store,
+    get_vector_store_document_count,
     ingestion,
     is_insufficient_answer,
     quick_context,
@@ -37,7 +40,44 @@ app.add_middleware(
 STATIC_DIR = Path(__file__).parent / "static"
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
-ingestion.ingest_data()
+AUTO_INGEST = os.getenv("AUTO_INGEST", "true").strip().lower() in {"1", "true", "yes", "on"}
+
+_INGESTION_STATE = {
+    "running": False,
+    "ready": False,
+    "error": "",
+}
+
+
+def _mark_ready_from_store() -> None:
+    try:
+        _INGESTION_STATE["ready"] = get_vector_store_document_count() > 0
+    except Exception:
+        _INGESTION_STATE["ready"] = False
+
+
+def _ingest_in_background() -> None:
+    if _INGESTION_STATE["running"]:
+        return
+
+    def worker():
+        _INGESTION_STATE["running"] = True
+        _INGESTION_STATE["error"] = ""
+        try:
+            ingestion.ingest_data()
+            _INGESTION_STATE["ready"] = get_vector_store_document_count() > 0
+        except Exception as exc:
+            _INGESTION_STATE["error"] = str(exc)
+            _INGESTION_STATE["ready"] = False
+        finally:
+            _INGESTION_STATE["running"] = False
+
+    threading.Thread(target=worker, daemon=True).start()
+
+
+_mark_ready_from_store()
+if AUTO_INGEST and not _INGESTION_STATE["ready"]:
+    _ingest_in_background()
 
 
 class ChatMessage(BaseModel):
@@ -136,6 +176,26 @@ def _build_response(query: str, history: list[ChatMessage] | None = None):
             "original_query": query,
         }
 
+    if not _INGESTION_STATE["ready"]:
+        status_message = (
+            "A base documental ainda está sendo preparada para consulta. "
+            "Tente novamente em alguns instantes."
+        )
+        if _INGESTION_STATE["error"]:
+            status_message = (
+                "A base documental não ficou pronta para consulta. "
+                "Verifique a configuração do Ollama e atualize a base novamente."
+            )
+        return {
+            "results": status_message,
+            "sources": [],
+            "context": [],
+            "answer_mode": "status",
+            "similarity": None,
+            "resolved_query": query,
+            "original_query": query,
+        }
+
     context_docs = _retrieve_context_docs(
         quick_match.answer.canonical_question if quick_match and quick_match.mode == "assist" else query,
         history,
@@ -189,15 +249,26 @@ def index():
 
 @app.get("/health")
 def health():
-    return {"message": "ok"}
+    return {
+        "message": "ok",
+        "ready": _INGESTION_STATE["ready"],
+        "running": _INGESTION_STATE["running"],
+        "error": _INGESTION_STATE["error"],
+        "documents": get_vector_store_document_count() if _INGESTION_STATE["ready"] else 0,
+    }
+
+
+@app.get("/api/status")
+def status():
+    return health()
 
 
 @app.get("/update")
 def update_vector_store():
-    ingestion.ingest_data()
-    vector_store = get_vector_store()
-    total_docs = len(vector_store._collection.get()["ids"])
-    return {"message": f"Vector store updated. Total documents: {total_docs}"}
+    if _INGESTION_STATE["running"]:
+        return {"message": "A atualização já está em andamento.", "ready": _INGESTION_STATE["ready"]}
+    _ingest_in_background()
+    return {"message": "Atualização da base iniciada.", "ready": _INGESTION_STATE["ready"]}
 
 
 @app.get("/query")
