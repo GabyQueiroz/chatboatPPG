@@ -42,7 +42,14 @@ async function ask(query) {
   });
 
   if (!response.ok) {
-    throw new Error("Falha ao consultar a API.");
+    let detail = "Falha ao consultar a API.";
+    try {
+      const data = await response.json();
+      detail = data.detail || data.results || detail;
+    } catch (error) {
+      detail = "Falha ao consultar a API.";
+    }
+    throw new Error(detail);
   }
 
   return response.json();
@@ -91,7 +98,7 @@ form.addEventListener("submit", async (event) => {
     addToHistory("assistant", data.results || "");
     loadSuggestions();
   } catch (error) {
-    const message = "Não consegui consultar o chatbot agora. Verifique se o servidor e o Ollama estão ativos.";
+    const message = error?.message || "Não consegui consultar o chatbot agora.";
     updateMessage(pending, message);
     addToHistory("assistant", message);
   } finally {

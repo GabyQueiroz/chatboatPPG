@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Literal
 
 from fastapi import FastAPI
+from fastapi import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -273,12 +274,24 @@ def update_vector_store():
 
 @app.get("/query")
 def query_vector_store(query: str):
-    return _build_response(query)
+    try:
+        return _build_response(query)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Falha ao consultar o chatbot: {exc}",
+        ) from exc
 
 
 @app.post("/api/query")
 def query_vector_store_post(payload: QuestionRequest):
-    return _build_response(payload.query, payload.history)
+    try:
+        return _build_response(payload.query, payload.history)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Falha ao consultar o chatbot: {exc}",
+        ) from exc
 
 
 @app.get("/api/suggestions")
