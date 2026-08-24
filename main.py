@@ -6,6 +6,7 @@ import unicodedata
 from pathlib import Path
 from typing import Literal
 
+import ollama
 from fastapi import FastAPI
 from fastapi import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -259,9 +260,50 @@ def health():
     }
 
 
+def _mask_secret(value: str) -> str:
+    if not value:
+        return ""
+    if len(value) <= 8:
+        return "*" * len(value)
+    return f"{value[:6]}...{value[-4:]}"
+
+
 @app.get("/api/status")
 def status():
     return health()
+
+
+@app.get("/api/ollama-status")
+def ollama_status():
+    host = os.getenv("OLLAMA_HOST", "").strip()
+    api_key = os.getenv("OLLAMA_API_KEY", "").strip()
+
+    client_kwargs = {}
+    if api_key:
+        client_kwargs["headers"] = {"Authorization": f"Bearer {api_key}"}
+
+    try:
+        client = ollama.Client(host=host or None, **client_kwargs)
+        tags = client.list()
+        models = []
+        for item in getattr(tags, "models", [])[:10]:
+            name = getattr(item, "model", None) or getattr(item, "name", None) or str(item)
+            models.append(name)
+        return {
+            "ok": True,
+            "host": host,
+            "api_key_present": bool(api_key),
+            "api_key_masked": _mask_secret(api_key),
+            "models_preview": models,
+        }
+    except Exception as exc:
+        return {
+            "ok": False,
+            "host": host,
+            "api_key_present": bool(api_key),
+            "api_key_masked": _mask_secret(api_key),
+            "error": str(exc),
+        }
 
 
 @app.get("/update")
