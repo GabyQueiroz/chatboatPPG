@@ -1,5 +1,6 @@
 import json
 import os
+import time
 
 from ..rag import chunk_data, get_vector_store, load_docs
 
@@ -86,14 +87,38 @@ def ingest_data():
     if existing_ids:
         vector_store._collection.delete(ids=existing_ids)
 
-    for start in range(0, len(deduped_chunks), INGEST_BATCH_SIZE):
+    total_chunks = len(deduped_chunks)
+    total_batches = (total_chunks + INGEST_BATCH_SIZE - 1) // INGEST_BATCH_SIZE
+    print(
+        f"Iniciando ingestão de {total_chunks} chunks "
+        f"em {total_batches} lote(s) de até {INGEST_BATCH_SIZE}.",
+        flush=True,
+    )
+
+    for batch_number, start in enumerate(
+        range(0, total_chunks, INGEST_BATCH_SIZE), start=1
+    ):
         batch_docs = deduped_chunks[start:start + INGEST_BATCH_SIZE]
         batch_ids = ids[start:start + INGEST_BATCH_SIZE]
+        started_at = time.perf_counter()
         vector_store.add_documents(batch_docs, ids=batch_ids)
+        completed_chunks = min(start + len(batch_docs), total_chunks)
+        elapsed_seconds = time.perf_counter() - started_at
+        percentage = (completed_chunks / total_chunks * 100) if total_chunks else 100
+        print(
+            f"Ingestão: {completed_chunks}/{total_chunks} chunks "
+            f"({percentage:.1f}%) | lote {batch_number}/{total_batches} "
+            f"em {elapsed_seconds:.1f}s",
+            flush=True,
+        )
 
     save_manifest(manifest)
     total_docs = len(vector_store._collection.get()["ids"])
-    print(f"Ingested {len(deduped_chunks)} documents. Total documents in vector store: {total_docs}")
+    print(
+        f"Ingestão concluída: {total_chunks} chunks processados. "
+        f"Total no banco vetorial: {total_docs}",
+        flush=True,
+    )
 
 
 if __name__ == "__main__":
