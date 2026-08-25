@@ -9,13 +9,21 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.9
-      - key: OLLAMA_HOST
+      - key: LLM_OLLAMA_HOST
+        sync: false
+      - key: LLM_OLLAMA_API_KEY
         sync: false
       - key: LLM_MODEL
-        value: qwen2.5:7b
+        sync: false
+      - key: EMBED_OLLAMA_HOST
+        value: http://127.0.0.1:11434
       - key: EMBED_MODEL
         value: bge-m3
       - key: AUTO_INGEST
         value: "true"
       - key: CHROMA_DIR
         value: db/chroma
+      - key: INGEST_BATCH_SIZE
+        value: "8"
+      - key: ENABLE_ADMIN_ENDPOINTS
+        value: "false"

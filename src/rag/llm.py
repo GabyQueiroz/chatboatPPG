@@ -5,8 +5,8 @@ import os
 import ollama
 
 LLM_MODEL = os.getenv("LLM_MODEL", "qwen2.5:7b")
-OLLAMA_HOST = os.getenv("OLLAMA_HOST", "").strip()
-OLLAMA_API_KEY = os.getenv("OLLAMA_API_KEY", "").strip()
+LLM_OLLAMA_HOST = os.getenv("LLM_OLLAMA_HOST", "").strip()
+LLM_OLLAMA_API_KEY = os.getenv("LLM_OLLAMA_API_KEY", "").strip()
 
 SYSTEM_PROMPT = """
 Você é um assistente extremamente preciso sobre o Mestrado Profissional em Direito da UEPG.
@@ -120,9 +120,9 @@ def ask_question(question: str, context: str = "") -> str:
 
     user_content = f"Contexto:\n{cleaned_context}\n\nPergunta:\n{question}"
     client_kwargs = {}
-    if OLLAMA_API_KEY:
-        client_kwargs["headers"] = {"Authorization": f"Bearer {OLLAMA_API_KEY}"}
-    client = ollama.Client(host=OLLAMA_HOST or None, **client_kwargs)
+    if LLM_OLLAMA_API_KEY:
+        client_kwargs["headers"] = {"Authorization": f"Bearer {LLM_OLLAMA_API_KEY}"}
+    client = ollama.Client(host=LLM_OLLAMA_HOST or None, **client_kwargs)
     resp = client.chat(
         model=LLM_MODEL,
         messages=[

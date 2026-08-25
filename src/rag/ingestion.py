@@ -3,7 +3,9 @@ import os
 
 from ..rag import chunk_data, get_vector_store, load_docs
 
-MANIFEST_PATH = os.path.join("db", "chroma", "manifest.json")
+PERSIST_DIRECTORY = os.getenv("CHROMA_DIR", "db/chroma")
+MANIFEST_PATH = os.path.join(PERSIST_DIRECTORY, "manifest.json")
+INGEST_BATCH_SIZE = max(1, int(os.getenv("INGEST_BATCH_SIZE", "8")))
 INGESTION_VERSION = 3
 
 
@@ -84,8 +86,10 @@ def ingest_data():
     if existing_ids:
         vector_store._collection.delete(ids=existing_ids)
 
-    if deduped_chunks:
-        vector_store.add_documents(deduped_chunks, ids=ids)
+    for start in range(0, len(deduped_chunks), INGEST_BATCH_SIZE):
+        batch_docs = deduped_chunks[start:start + INGEST_BATCH_SIZE]
+        batch_ids = ids[start:start + INGEST_BATCH_SIZE]
+        vector_store.add_documents(batch_docs, ids=batch_ids)
 
     save_manifest(manifest)
     total_docs = len(vector_store._collection.get()["ids"])

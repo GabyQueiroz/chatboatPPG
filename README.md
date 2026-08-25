@@ -72,20 +72,23 @@ A integração com WhatsApp é possível via Meta WhatsApp Cloud API ou Twilio. 
 
 ### O que foi preparado
 
-- suporte explícito a Ollama remoto via variável `OLLAMA_HOST`;
-- modelos configuráveis por ambiente com `LLM_MODEL` e `EMBED_MODEL`;
+- geração e embeddings configuráveis de forma independente;
 - indexação automática em segundo plano via `AUTO_INGEST`;
 - separação entre dependências de produção e de avaliação;
 - endpoint de status para saber se a base já está pronta.
 
 ### Variáveis de ambiente
 
-- `OLLAMA_HOST`: URL do Ollama local ou remoto. Exemplo: `http://127.0.0.1:11434` ou uma URL de Ollama Cloud.
-- `OLLAMA_API_KEY`: chave de acesso do Ollama Cloud quando o host for `https://ollama.com`.
+- `LLM_OLLAMA_HOST`: URL do Ollama usado para geração. Para Ollama Cloud: `https://ollama.com`.
+- `LLM_OLLAMA_API_KEY`: chave de acesso do Ollama Cloud para geração.
 - `LLM_MODEL`: modelo gerador. Padrão: `qwen2.5:7b`.
+- `EMBED_OLLAMA_HOST`: URL do Ollama usado para embeddings. Padrão: `http://127.0.0.1:11434`.
+- `EMBED_OLLAMA_API_KEY`: chave opcional para embeddings remotos.
 - `EMBED_MODEL`: modelo de embeddings. Padrão: `bge-m3`.
 - `AUTO_INGEST`: `true` ou `false`. Quando `true`, a base é preparada automaticamente ao subir.
 - `CHROMA_DIR`: pasta de persistência do índice vetorial. Padrão: `db/chroma`.
+- `INGEST_BATCH_SIZE`: quantidade de fragmentos vetorizados por lote. Use `1` em VPS com 1 GB de RAM.
+- `ENABLE_ADMIN_ENDPOINTS`: mantenha `false` em produção; protege `/update` e `/api/ollama-status`.
 
 ### Render
 
@@ -96,11 +99,12 @@ O projeto já possui `render.yaml`, mas o link público só funcionará bem se o
 - o disco não é persistente no plano free;
 - modelos grandes tendem a deixar o startup lento.
 
-O caminho mais simples é:
+Para uma implantação com LLM na nuvem e embeddings locais, use:
 
-1. publicar esta API no Render;
-2. apontar `OLLAMA_HOST` para um Ollama remoto;
-3. aguardar o endpoint `/api/status` indicar `ready: true`.
+1. apontar `LLM_OLLAMA_HOST` para `https://ollama.com` e configurar `LLM_OLLAMA_API_KEY`;
+2. manter `EMBED_OLLAMA_HOST=http://127.0.0.1:11434` e instalar somente o modelo `bge-m3` na VPS;
+3. usar um diretório persistente em `CHROMA_DIR`;
+4. aguardar o endpoint `/api/status` indicar `ready: true`.
 
 ### VPS
 
@@ -110,4 +114,5 @@ Se a ideia for ter um link mais estável, a melhor opção é uma VPS com:
 - Ollama no mesmo servidor;
 - persistência do diretório `db/chroma`.
 
-Nesse cenário, a experiência costuma ser bem melhor para usuários finais.
+Nesse cenário, a VPS não executa o modelo gerador, mas ainda precisa ter memória
+suficiente para o modelo de embeddings durante a ingestão e as consultas.

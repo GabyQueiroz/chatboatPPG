@@ -9,7 +9,6 @@ from typing import Literal
 import ollama
 from fastapi import FastAPI
 from fastapi import HTTPException
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -31,18 +30,11 @@ from src.rag.structured_answers import resolve_structured_answer
 
 app = FastAPI(title="Chatbot Acadêmico PPGD/UEPG")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 STATIC_DIR = Path(__file__).parent / "static"
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 AUTO_INGEST = os.getenv("AUTO_INGEST", "true").strip().lower() in {"1", "true", "yes", "on"}
+ENABLE_ADMIN_ENDPOINTS = os.getenv("ENABLE_ADMIN_ENDPOINTS", "false").strip().lower() in {"1", "true", "yes", "on"}
 
 _INGESTION_STATE = {
     "running": False,
@@ -275,8 +267,11 @@ def status():
 
 @app.get("/api/ollama-status")
 def ollama_status():
-    host = os.getenv("OLLAMA_HOST", "").strip()
-    api_key = os.getenv("OLLAMA_API_KEY", "").strip()
+    if not ENABLE_ADMIN_ENDPOINTS:
+        raise HTTPException(status_code=404, detail="Not found")
+
+    host = os.getenv("LLM_OLLAMA_HOST", "").strip()
+    api_key = os.getenv("LLM_OLLAMA_API_KEY", "").strip()
 
     client_kwargs = {}
     if api_key:
@@ -308,6 +303,8 @@ def ollama_status():
 
 @app.get("/update")
 def update_vector_store():
+    if not ENABLE_ADMIN_ENDPOINTS:
+        raise HTTPException(status_code=404, detail="Not found")
     if _INGESTION_STATE["running"]:
         return {"message": "A atualização já está em andamento.", "ready": _INGESTION_STATE["ready"]}
     _ingest_in_background()
