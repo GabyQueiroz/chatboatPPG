@@ -10,7 +10,7 @@ Chatbot RAG para consulta aos documentos do Mestrado Profissional em Direito da 
 Modelos usados:
 
 ```powershell
-ollama pull qwen2.5:7b
+ollama pull Beelzebub4883/qwen2.5-cloud
 ollama pull bge-m3
 ```
 
